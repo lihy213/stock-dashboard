@@ -1,22 +1,22 @@
 {
-  "update_time": "2026-05-21 20:25:49",
+  "update_time": "2026-05-21 20:27:09",
   "update_date": "2026-05-21",
   "is_trading": false,
   "indices": {
     "sh_index": {
       "price": "4077.28",
-      "change_pct": "0.00%",
-      "change_pct_value": 0.0
+      "change_pct": "-2.04%",
+      "change_pct_value": -2.0398
     },
     "sz_index": {
       "price": "15247.27",
-      "change_pct": "0.00%",
-      "change_pct_value": 0.0
+      "change_pct": "-2.07%",
+      "change_pct_value": -2.0726
     },
     "kc50": {
       "price": "1764.17",
-      "change_pct": "0.00%",
-      "change_pct_value": 0.0
+      "change_pct": "-3.70%",
+      "change_pct_value": -3.7036
     },
     "volume": "--",
     "volume_days": "--",
