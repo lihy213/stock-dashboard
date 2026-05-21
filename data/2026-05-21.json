@@ -1,22 +1,8 @@
 {
-  "update_time": "2026-05-21 17:20:53",
+  "update_time": "2026-05-21 18:29:06",
   "update_date": "2026-05-21",
   "is_trading": false,
   "indices": {
-    "sh_index": {
-      "name": "上证指数",
-      "price": "4077.28",
-      "change_pct": "-2.04%",
-      "change_pct_value": -2.04,
-      "volume_手": "727218701.00"
-    },
-    "kc50": {
-      "name": "科创50",
-      "price": "1764.17",
-      "change_pct": "-3.70%",
-      "change_pct_value": -3.7,
-      "volume_手": "21274038.00"
-    },
     "volume": "--",
     "volume_days": "--",
     "volume_note": "--",
