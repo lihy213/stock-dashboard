@@ -87,7 +87,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </main>
 
 <footer class="footer">
-  <p>⚠️ 本报告仅供参考，不构成个人投资建议 ｜ 数据：东方财富API ｜ 最后更新：<span id="ft">--</span></p>
+  <p>⚠️ 本报告仅供参考，不构成个人投资建议 ｜ 数据：<span id="ds-source">📡 加载中</span> ｜ 最后更新：<span id="ft">--</span></p>
   <p style="margin-top:4px"><a href="https://github.com/lihy213/stock-dashboard" style="color:var(--b500)">GitHub</a></p>
 </footer>
 
@@ -128,10 +128,25 @@ let D=null,radarChart=null;
 
 async function loadData(){
   const ds=document.getElementById('ds');
+  const dsSource=document.getElementById('ds-source');
+
+  // 安全网：8秒后强制隐藏loading，防止极端情况下永久卡死
+  const safetyTimer=setTimeout(()=>{
+    const ld=document.getElementById('loading');
+    if(ld && ld.style.display!=='none'){
+      ld.style.display='none';
+      console.warn('⏰ 8秒安全超时：强制隐藏 loading');
+    }
+  },8000);
+
   try{
     const resp=await fetch('data.json?t='+Date.now());
     if(!resp.ok)throw new Error('HTTP '+resp.status);
     D=await resp.json();
+
+    // 动态读取数据源
+    if(dsSource) dsSource.textContent=D.data_source||'灵犀金融Skill';
+
     const age=Math.round((Date.now()-new Date(D.update_time).getTime())/60000);
     if(age<60)ds.innerHTML='<span class="ds-fresh">🟢 实时</span>';
     else if(age<240)ds.innerHTML='<span class="ds-stale">🟡 '+age+'分钟前</span>';
@@ -139,18 +154,28 @@ async function loadData(){
     buildAll();
     document.getElementById('ft').textContent=D.update_time;
   }catch(e){
-    console.error(e);
+    console.error('数据加载失败:',e);
     ds.innerHTML='<span class="ds-error">⚠️ 网络异常，显示缓存</span>';
     const c=localStorage.getItem('sd_cache');
-    if(c){D=JSON.parse(c);buildAll();}
+    if(c){
+      try{
+        D=JSON.parse(c);
+        if(dsSource) dsSource.textContent=D.data_source||'缓存数据';
+        buildAll();
+        document.getElementById('ft').textContent=(D.update_time||'--');
+      }catch(e2){console.error('缓存解析失败:',e2);}
+    }
+  }finally{
+    // 无论成功失败，清除安全计时器
+    clearTimeout(safetyTimer);
   }
 }
 
 function buildAll(){
-  if(!D)return;
-  // 第一步：必须隐藏 loading，确保用户看到页面
+  // 绝对保证隐藏 loading（即使 D 为空）
   try{document.getElementById('loading').style.display='none';}catch(e){}
-  // 第二步：逐步渲染，每步独立 try-catch，一个坏了不影响其他
+  if(!D)return;
+  // 逐步渲染，每步独立 try-catch，一个坏了不影响其他
   const steps=[
     ['Header',renderHeader],
     ['NavTabs',renderNavTabs],
