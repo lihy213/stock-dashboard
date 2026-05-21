@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A 股投资分析仪表盘 | 动态实时</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --blue-50:#eff6ff;--blue-100:#dbeafe;--blue-200:#bfdbfe;--blue-300:#93c5fd;--blue-400:#60a5fa;
+  --blue-500:#3b82f6;--blue-600:#2563eb;--blue-700:#1d4ed8;--blue-800:#1e40af;--blue-900:#1e3a8a;
+  --slate-50:#f8fafc;--slate-100:#f1f5f9;--slate-200:#e2e8f0;--slate-300:#cbd5e1;--slate-400:#94a3b8;
+  --slate-500:#64748b;--slate-600:#475569;--slate-700:#334155;--slate-800:#1e293b;--slate-900:#0f172a;
+  --green-500:#22c55e;--green-100:#dcfce7;--red-500:#ef4444;--red-100:#fee2e2;
+  --amber-500:#f59e0b;--amber-100:#fef3c7;--purple-500:#8b5cf6;--purple-100:#ede9fe;--cyan-500:#06b6d4;--cyan-100:#cffafe;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 16px rgba(0,0,0,.08);--shadow-lg:0 10px 32px rgba(0,0,0,.1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--slate-50);color:var(--slate-800);line-height:1.6;min-height:100vh}
+
+/* Header */
+.header{background:linear-gradient(135deg,var(--blue-800) 0%,var(--blue-600) 40%,#0891b2 100%);color:#fff;padding:20px 40px 14px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(30,64,175,.25)}
+.header h1{font-size:1.5rem;font-weight:700}
+.header .sub{font-size:.83rem;opacity:.85;margin-top:3px}
+.header .meta{display:flex;gap:16px;margin-top:5px;font-size:.76rem;opacity:.75;flex-wrap:wrap;align-items:center}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite;margin-right:5px;vertical-align:middle}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.refresh-badge{font-size:.66rem;padding:2px 8px;border-radius:12px;background:rgba(255,255,255,.15);margin-left:6px;vertical-align:middle}
+.data-status{font-size:.7rem;opacity:.8;margin-left:auto}
+
+/* Nav */
+.nav-tabs{display:flex;gap:4px;background:#fff;padding:10px 40px;border-bottom:1px solid var(--slate-200);position:sticky;top:92px;z-index:99;flex-wrap:wrap}
+.nav-tab{padding:6px 16px;border-radius:20px;font-size:.83rem;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--slate-500);transition:all .2s;white-space:nowrap}
+.nav-tab:hover{background:var(--blue-50);color:var(--blue-600)}
+.nav-tab.active{background:var(--blue-600);color:#fff}
+
+/* Main */
+.main{max-width:1240px;margin:0 auto;padding:22px 40px 60px}
+.section{display:none}
+.section.active{display:block;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Cards */
+.card-grid{display:grid;gap:14px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:#fff;border-radius:var(--radius-lg);padding:18px 22px;box-shadow:var(--shadow-sm);border:1px solid var(--slate-100);transition:box-shadow .2s}
+.card:hover{box-shadow:var(--shadow-md)}
+.card-title{font-size:.95rem;font-weight:700;color:var(--slate-800);margin-bottom:12px}
+.metric-label{font-size:.73rem;color:var(--slate-500)}
+.metric-value{font-size:1.4rem;font-weight:700;color:var(--blue-700)}
+.metric-sub{font-size:.73rem;color:var(--slate-400);margin-top:2px}
+
+/* Badges */
+.badge{font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:20px}
+.badge-blue{background:var(--blue-100);color:var(--blue-700)}
+.badge-green{background:var(--green-100);color:#15803d}
+.badge-red{background:var(--red-100);color:#b91c1c}
+.badge-amber{background:var(--amber-100);color:#92400e}
+.badge-purple{background:var(--purple-100);color:#6d28d9}
+
+/* Stock Tables */
+.stock-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.stock-table th{text-align:left;padding:8px 10px;font-size:.72rem;font-weight:600;color:var(--slate-500);text-transform:uppercase;letter-spacing:.03em;border-bottom:2px solid var(--blue-200);background:var(--blue-50)}
+.stock-table td{padding:9px 10px;border-bottom:1px solid var(--slate-100)}
+.stock-table tr:hover td{background:var(--blue-50)}
+.stock-name{font-weight:600;color:var(--slate-800)}
+.stock-code{font-size:.7rem;color:var(--slate-400);margin-left:3px}
+.trend-up{color:#dc2626;font-weight:600}
+.trend-down{color:#16a34a;font-weight:600}
+.trend-flat{color:var(--slate-400)}
+.stars{color:#f59e0b;letter-spacing:1px}
+
+/* Risk tags */
+.rt{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600}
+.rt-low{background:#dcfce7;color:#15803d}
+.rt-mid{background:#fef3c7;color:#92400e}
+.rt-high{background:#fee2e2;color:#b91c1c}
+
+/* Progress bar */
+.pbar{height:5px;background:var(--slate-200);border-radius:3px;overflow:hidden;margin-top:4px}
+.pbar-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.pb-blue{background:linear-gradient(90deg,var(--blue-400),var(--blue-600))}
+.pb-green{background:linear-gradient(90deg,#22c55e,#16a34a)}
+
+/* Radar */
+.radar-wrap{width:100%;max-width:460px;margin:0 auto}
+
+/* Allocation */
+.alloc-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.alloc-label{width:75px;font-size:.8rem;font-weight:600;text-align:right;flex-shrink:0}
+.alloc-bar-wrap{flex:1;height:24px;background:var(--slate-100);border-radius:12px;overflow:hidden}
+.alloc-bar{height:100%;border-radius:12px;display:flex;align-items:center;padding-left:10px;font-size:.73rem;font-weight:600;color:#fff;transition:width 1s ease}
+
+/* Timeline */
+.timeline{position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:10px;top:4px;bottom:4px;width:2px;background:linear-gradient(to bottom,var(--blue-400),var(--blue-200))}
+.timeline-item{position:relative;margin-bottom:16px}
+.timeline-dot{position:absolute;left:-23px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--blue-500);border:3px solid #fff;box-shadow:0 0 0 2px var(--blue-300)}
+.timeline-date{font-size:.73rem;color:var(--blue-600);font-weight:600}
+.timeline-content{font-size:.83rem;color:var(--slate-700);margin-top:2px}
+
+/* Heat */
+.heat-row{display:flex;gap:2px;align-items:center}
+.heat-dot{width:7px;height:7px;border-radius:50%;background:var(--slate-300)}
+.heat-dot.on{background:#ef4444}
+
+/* Footer */
+.footer{text-align:center;padding:22px 40px;color:var(--slate-400);font-size:.76rem;border-top:1px solid var(--slate-200)}
+
+/* Compare table 2-col */
+.comp-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.comp-col{background:var(--blue-50);border-radius:var(--radius-md);padding:14px 16px}
+
+/* Error state */
+.data-stale{color:#f59e0b}
+.data-fresh{color:#22c55e}
+
+@media(max-width:900px){
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .header{padding:14px 16px}
+  .nav-tabs{padding:6px 8px;gap:2px}
+  .nav-tab{padding:5px 10px;font-size:.76rem}
+  .main{padding:14px 12px 40px}
+  .comp-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header class="header">
+  <h1>📊 中美/中俄会晤后 A 股投资分析仪表盘 <span class="refresh-badge"><span class="live-dot"></span>动态刷新</span></h1>
+  <div class="sub">宏观事件驱动 + 行业深度分析 ｜ 覆盖：商业航天 · 半导体 · 电力</div>
+  <div class="meta" id="header-meta">
+    <span>📅 加载中...</span>
+    <span class="data-status" id="dataStatus">⏳ 正在加载数据</span>
+  </div>
+</header>
+
+<!-- ==================== NAV ==================== -->
+<nav class="nav-tabs">
+  <button class="nav-tab active" onclick="switchTab('overview')">📋 总览</button>
+  <button class="nav-tab" onclick="switchTab('macro')">🌐 宏观</button>
+  <button class="nav-tab" onclick="switchTab('aerospace')">🚀 商业航天</button>
+  <button class="nav-tab" onclick="switchTab('chip')">💻 半导体</button>
+  <button class="nav-tab" onclick="switchTab('power')">⚡ 电力</button>
+  <button class="nav-tab" onclick="switchTab('risk')">⚠️ 风险</button>
+  <button class="nav-tab" onclick="switchTab('portfolio')">🎯 配置</button>
+</nav>
+
+<main class="main">
+
+<!-- ============ OVERVIEW ============ -->
+<section class="section active" id="sec-overview">
+  <div class="card-grid g4" style="margin-bottom:14px">
+    <div class="card" style="text-align:center">
+      <div class="metric-label">A 股成交额</div>
+      <div class="metric-value" id="ov-volume">--</div>
+      <div class="metric-sub" id="ov-volume-sub">--</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="metric-label">科创芯片 YTD</div>
+      <div class="metric-value" style="color:#dc2626" id="ov-chip-ytd">--</div>
+      <div class="metric-sub" id="ov-chip-note">--</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="metric-label">电力板块 PE</div>
+      <div class="metric-value" style="color:#16a34a" id="ov-power-pe">--</div>
+      <div class="metric-sub" id="ov-power-note">--</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="metric-label">综合风险评级</div>
+      <div class="metric-value" style="color:#f59e0b">中等</div>
+      <div class="metric-sub">外部风险回落，估值分化显著</div>
+    </div>
+  </div>
+
+  <div class="card-grid g2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-title">三大板块多维对比</div>
+      <div class="radar-wrap"><canvas id="radarChart" height="320"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">板块优先级排序</div>
+      <table class="stock-table">
+        <thead><tr><th>方向</th><th>确定性</th><th>弹性</th><th>估值分位</th><th>评级</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stock-name">半导体</span></td><td class="stars">★★★★★</td><td class="stars">★★★★★</td><td><span class="rt rt-high">偏高</span></td><td><span class="badge badge-blue">超配</span></td></tr>
+          <tr><td><span class="stock-name">商业航天</span></td><td class="stars">★★★☆</td><td class="stars">★★★★★</td><td><span class="rt rt-mid">中等</span></td><td><span class="badge badge-blue">超配</span></td></tr>
+          <tr><td><span class="stock-name">AI 算力</span></td><td class="stars">★★★★</td><td class="stars">★★★★★</td><td><span class="rt rt-high">偏高</span></td><td><span class="badge badge-blue">超配</span></td></tr>
+          <tr><td><span class="stock-name">电力/电网</span></td><td class="stars">★★★★★</td><td class="stars">★★★☆</td><td><span class="rt rt-low">偏低</span></td><td><span class="badge badge-green">标配偏超配</span></td></tr>
+          <tr><td><span class="stock-name">核电/SMR</span></td><td class="stars">★★★★</td><td class="stars">★★★★</td><td><span class="rt rt-low">合理</span></td><td><span class="badge badge-purple">标配</span></td></tr>
+          <tr><td><span class="stock-name">氢能</span></td><td class="stars">★★★</td><td class="stars">★★★★</td><td><span class="rt rt-low">合理</span></td><td><span class="badge badge-purple">标配</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 近期催化剂日历</div>
+    <div class="timeline">
+      <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">2026年5-6月</div><div class="timeline-content">SpaceX IPO 路演，目标估值 <strong>2 万亿美元</strong> <span class="badge badge-blue">商业航天</span></div></div>
+      <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">2026年Q2</div><div class="timeline-content">朱雀三号遥二发射 (可回收验证) <span class="badge badge-blue">商业航天</span> ｜ 长鑫存储科创板 IPO <span class="badge badge-purple">半导体</span></div></div>
+      <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">2026年Q3</div><div class="timeline-content">"十五五"商业航天细则出台 <span class="badge badge-blue">商业航天</span></div></div>
+      <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">2026年H2</div><div class="timeline-content">特高压新批次招标 + 算力中心配储细则 <span class="badge badge-green">电力</span></div></div>
+      <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">2026全年</div><div class="timeline-content">中美贸易理事会首次会议 <span class="badge badge-amber">外贸/航空</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MACRO ============ -->
+<section class="section" id="sec-macro">
+  <h2 style="margin-bottom:14px;color:var(--blue-800)">🌐 宏观事件影响</h2>
+  <div class="comp-row" style="margin-bottom:14px">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span class="card-title" style="margin:0">🇺🇸 中美会晤 · 五大经贸成果</span>
+        <span class="badge badge-blue">5/13-15 特朗普访华</span>
+      </div>
+      <div style="font-size:.8rem;color:var(--slate-600);margin-bottom:8px"><span class="live-dot" style="background:#22c55e"></span>确立 "建设性战略稳定关系" · 四大支柱</div>
+      <table class="stock-table">
+        <thead><tr><th>成果</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td><strong>关税安排</strong></td><td>就关税安排形成积极共识，原则同意相互降税</td></tr>
+          <tr><td><strong>常设机制</strong></td><td>成立贸易理事会 + 投资理事会</td></tr>
+          <tr><td><strong>农产品</strong></td><td>解决非关税壁垒，扩大双向农产品贸易</td></tr>
+          <tr><td><strong>飞机采购</strong></td><td>中方采购飞机，美方保障零部件供应</td></tr>
+          <tr><td><strong>常态化沟通</strong></td><td>建立定期经贸磋商机制</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span class="card-title" style="margin:0">🇷🇺 中俄会晤 · 五大合作信号</span>
+        <span class="badge badge-amber">5/19-20 普京访华</span>
+      </div>
+      <div style="font-size:.8rem;color:var(--slate-600);margin-bottom:8px"><span class="live-dot" style="background:#f59e0b"></span>能源 · 科技 · 去美元化多领域突破</div>
+      <table class="stock-table">
+        <thead><tr><th>信号</th><th>核心合作</th><th>板块</th></tr></thead>
+        <tbody>
+          <tr><td><strong>能源升级</strong></td><td>西伯利亚力量2号 + 氢能基地 + SMR核能中心</td><td><span class="rt rt-mid">核电</span></td></tr>
+          <tr><td><strong>去美元化</strong></td><td>数字人民币大宗商品结算，本币结算率 >99%</td><td><span class="rt rt-mid">金融科技</span></td></tr>
+          <tr><td><strong>科技创新</strong></td><td>量子计算/脑机接口 5 个国家级实验室</td><td><span class="rt rt-high">AI/量子</span></td></tr>
+          <tr><td><strong>航天联合</strong></td><td>2028 月球科研站 · 2030 载人登月</td><td><span class="rt rt-high">航天</span></td></tr>
+          <tr><td><strong>跨境电商</strong></td><td>2026 年交易额目标 500 亿美元</td><td><span class="rt rt-mid">电商</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📡 对 A 股传导机制与受益方</div>
+    <div class="card-grid g3" style="margin-top:8px">
+      <div style="background:var(--blue-50);border-radius:var(--radius-md);padding:14px 16px">
+        <div style="font-weight:700;color:var(--blue-700);margin-bottom:4px">① 中美关税缓和 → 出口科技</div>
+        <div style="font-size:.8rem;color:var(--slate-600)">风险溢价回落，外资回流预期增强，半导体设备/材料出口压力缓解</div>
+      </div>
+      <div style="background:var(--amber-100);border-radius:var(--radius-md);padding:14px 16px">
+        <div style="font-weight:700;color:#92400e;margin-bottom:4px">② 中俄能源合作 → 核电/SMR/氢能</div>
+        <div style="font-size:.8rem;color:var(--slate-600)">全产业链故事从"概念→订单"，中俄核能创新中心+全球最大氢能基地双催化</div>
+      </div>
+      <div style="background:var(--purple-100);border-radius:var(--radius-md);padding:14px 16px">
+        <div style="font-weight:700;color:#6d28d9;margin-bottom:4px">③ 双线科技合作 → 航天/芯片/量子</div>
+        <div style="font-size:.8rem;color:var(--slate-600)">中美 + 中俄科技合作形成双轮驱动，半导体国产替代 + 航天联合登月共振</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AEROSPACE ============ -->
+<section class="section" id="sec-aerospace">
+  <h2 style="margin-bottom:8px;color:var(--blue-800)">🚀 商业航天板块</h2>
+  <p style="font-size:.82rem;color:var(--slate-500);margin-bottom:14px">
+    四重催化剂共振：火箭可回收验证 + 2万颗星座计划 + 2.5万亿投资 + SpaceX 2万亿IPO锚。正处于"概念→业绩"拐点期，弹性最大。
+  </p>
+  <div class="card">
+    <table class="stock-table" id="tbl-aerospace">
+      <thead><tr><th>股票 (代码)</th><th>产业链环节</th><th>核心看点</th><th>最新价</th><th>涨跌幅</th><th>风险</th></tr></thead>
+      <tbody id="tbody-aerospace"><tr><td colspan="6" style="text-align:center;color:var(--slate-400)">⏳ 加载中...</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ SEMICONDUCTOR ============ -->
+<section class="section" id="sec-chip">
+  <h2 style="margin-bottom:8px;color:var(--blue-800)">💻 半导体板块</h2>
+  <p style="font-size:.82rem;color:var(--slate-500);margin-bottom:14px">
+    最强主线：国产替代 60% 目标 + AI 算力爆发 。设备龙头年内涨幅近 80%，估值已偏高，建议逢调仓加仓设备龙头，材料股精选。
+  </p>
+  <div class="card">
+    <table class="stock-table" id="tbl-chip">
+      <thead><tr><th>股票 (代码)</th><th>细分环节</th><th>核心看点</th><th>最新价</th><th>涨跌幅</th><th>风险</th></tr></thead>
+      <tbody id="tbody-chip"><tr><td colspan="6" style="text-align:center;color:var(--slate-400)">⏳ 加载中...</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ POWER ============ -->
+<section class="section" id="sec-power">
+  <h2 style="margin-bottom:8px;color:var(--blue-800)">⚡ 电力板块</h2>
+  <p style="font-size:.82rem;color:var(--slate-500);margin-bottom:14px">
+    防御+成长兼备：AI 算力是电力"第二增长曲线"，国网十五五投资 4 万亿 (+40%)，当前 PE ~12x 处于极低分位。最安全的方向。
+  </p>
+  <div class="card">
+    <table class="stock-table" id="tbl-power">
+      <thead><tr><th>股票 (代码)</th><th>细分方向</th><th>核心看点</th><th>最新价</th><th>涨跌幅</th><th>风险</th></tr></thead>
+      <tbody id="tbody-power"><tr><td colspan="6" style="text-align:center;color:var(--slate-400)">⏳ 加载中...</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ RISK ============ -->
+<section class="section" id="sec-risk">
+  <h2 style="margin-bottom:14px;color:var(--blue-800)">⚠️ 风险评估矩阵</h2>
+  <div class="card">
+    <table class="stock-table">
+      <thead><tr><th style="width:24%">风险项</th><th style="width:12%">概率</th><th style="width:12%">影响</th><th style="width:16%">热度</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>中美关税反复</strong></td><td><span class="rt rt-mid">中等</span></td><td><span class="rt rt-high">高</span></td>
+          <td><div class="heat-row"><span class="heat-dot on"></span><span class="heat-dot on"></span><span class="heat-dot on"></span><span class="heat-dot"></span><span class="heat-dot"></span></div></td>
+          <td style="font-size:.8rem">美方对华技术限制框架仍在，关税执行节奏存在不确定性</td>
+        </tr>
+        <tr>
+          <td><strong>半导体估值回调</strong></td><td><span class="rt rt-high">较高</span></td><td><span class="rt rt-high">高</span></td>
+          <td><div class="heat-row"><span class="heat-dot on"></span><span class="heat-dot on"></span><span class="heat-dot on"></span><span class="heat-dot on"></span><span class="heat-dot"></span></div></td>
+          <td style="font-size:.8rem">年内涨幅近 50%，"讲故事→交业绩"切换期震荡剧烈</td>
+        </tr>
+        <tr>
+          <td><strong>商业航天概念退潮</strong></td><td><span class="rt rt-mid">中等</span></td><td><span class="rt rt-mid">中</span></td>
+          <td><div class="heat-row"><span class="heat-dot on"></span><span class="heat-dot on"></span><span class="heat-dot on"></span><span class="heat-dot"></span><span class="heat-dot"></span></div></td>
+          <td style="font-size:.8rem">部分公司处于炒概念阶段，无实质订单支撑。需区分"真航天"与"概念蹭"</td>
+        </tr>
+        <tr>
+          <td><strong>中俄合作落地慢</strong></td><td><span class="rt rt-low">较低</span></td><td><span class="rt rt-mid">中</span></td>
+          <td><div class="heat-row"><span class="heat-dot on"></span><span class="heat-dot on"></span><span class="heat-dot"></span><span class="heat-dot"></span><span class="heat-dot"></span></div></td>
+          <td style="font-size:.8rem">能源基建类合作执行周期长（3-5年），短期业绩催化有限</td>
+        </tr>
+        <tr>
+          <td><strong>流动性收紧</strong></td><td><span class="rt rt-low">较低</span></td><td><span class="rt rt-high">高</span></td>
+          <td><div class="heat-row"><span class="heat-dot on"></span><span class="heat-dot"></span><span class="heat-dot"></span><span class="heat-dot"></span><span class="heat-dot"></span></div></td>
+          <td style="font-size:.8rem">央行维持宽松基调，短期内看不到收紧信号</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card-grid g3" style="margin-top:14px">
+    <div class="card" style="border-left:4px solid #ef4444">
+      <div class="card-title" style="color:#b91c1c">🔴 高概率风险</div>
+      <ul style="font-size:.82rem;padding-left:20px;color:var(--slate-600)">
+        <li>半导体年内涨幅过大，高位追涨风险</li>
+        <li>部分商业航天标的无实质订单</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:4px solid #f59e0b">
+      <div class="card-title" style="color:#92400e">🟡 须关注风险</div>
+      <ul style="font-size:.82rem;padding-left:20px;color:var(--slate-600)">
+        <li>中美技术限制框架仍存</li>
+        <li>中俄项目落地速度不确定</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:4px solid #22c55e">
+      <div class="card-title" style="color:#15803d">🟢 低风险方向</div>
+      <ul style="font-size:.82rem;padding-left:20px;color:var(--slate-600)">
+        <li>电力/电网 — 低估值 + 高确定性</li>
+        <li>核电 — 政策 + 技术双催化</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PORTFOLIO ============ -->
+<section class="section" id="sec-portfolio">
+  <h2 style="margin-bottom:14px;color:var(--blue-800)">🎯 配置策略</h2>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">哑铃型配置结构</div>
+    <p style="font-size:.8rem;color:var(--slate-500);margin-bottom:12px">防御端打底 + 进攻端博弹性，攻防比例 ≈ 45:55</p>
+    <div class="alloc-row">
+      <div class="alloc-label">电力/电网</div>
+      <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:30%;background:linear-gradient(90deg,#2563eb,#1d4ed8)">30%</div></div>
+    </div>
+    <div class="alloc-row">
+      <div class="alloc-label">核电/SMR</div>
+      <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:15%;background:linear-gradient(90deg,#7c3aed,#6d28d9)">15%</div></div>
+    </div>
+    <div class="alloc-row">
+      <div class="alloc-label">半导体</div>
+      <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:25%;background:linear-gradient(90deg,#0891b2,#06b6d4)">25%</div></div>
+    </div>
+    <div class="alloc-row">
+      <div class="alloc-label">商业航天</div>
+      <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:20%;background:linear-gradient(90deg,#f59e0b,#d97706)">20%</div></div>
+    </div>
+    <div class="alloc-row">
+      <div class="alloc-label">现金/其他</div>
+      <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:10%;background:linear-gradient(90deg,#94a3b8,#64748b)">10%</div></div>
+    </div>
+  </div>
+
+  <div class="card-grid g3">
+    <div class="card">
+      <div class="card-title">🟢 稳健型</div>
+      <ul style="font-size:.82rem;padding-left:20px;color:var(--slate-600)">
+        <li>长江电力 600900 — 水电龙头</li>
+        <li>中国广核 003816 — 核电</li>
+        <li>国电南瑞 600406 — 电网</li>
+        <li>宁德时代 300750 — 储能</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">🔵 成长型</div>
+      <ul style="font-size:.82rem;padding-left:20px;color:var(--slate-600)">
+        <li>北方华创 002371 — 半导体设备龙头</li>
+        <li>中微公司 688012 — 刻蚀龙头</li>
+        <li>寒武纪 688256 — AI芯片</li>
+        <li>海光信息 688041 — 国产CPU/GPU</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">🟡 事件驱动</div>
+      <ul style="font-size:.82rem;padding-left:20px;color:var(--slate-600)">
+        <li>国博电子 688375 — 卫星载荷</li>
+        <li>铂力特 688333 — 3D打印/火箭</li>
+        <li>航天工程 603698 — 航天工程</li>
+        <li>烽火通信 600498 — 卫星通信</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <p>⚠️ 本报告仅供参考，不构成个人投资建议 ｜ 数据来源：akshare / Wind / 东方财富 ｜ 最后更新：<span id="footer-time">--</span></p>
+  <p style="margin-top:4px">Powered by GitHub Pages · <a href="https://github.com/lihy213/stock-dashboard" style="color:var(--blue-500)">lihy213/stock-dashboard</a></p>
+</footer>
+
+<!-- ==================== SCRIPTS ==================== -->
+<script>
+// ─── Data ───
+let D = null;
+const STOCK_META = {
+  // 商业航天
+  '301005': {sub:'上游·火箭制造', thesis:'火箭紧固件核心供应', risk:'中', riskCls:'rt-mid', stars:'★★★', maturity:72, stage:'验证期'},
+  '688333': {sub:'上游·火箭制造', thesis:'3D打印/火箭零部件', risk:'中', riskCls:'rt-mid', stars:'★★★★', maturity:78, stage:'小批量'},
+  '688281': {sub:'上游·火箭制造', thesis:'隐身材料/热防护', risk:'中', riskCls:'rt-mid', stars:'★★★', maturity:65, stage:'验证期'},
+  '688375': {sub:'中游·卫星载荷', thesis:'军用射频芯片,T/R组件核心', risk:'中', riskCls:'rt-mid', stars:'★★★★★', maturity:75, stage:'小批量'},
+  '603698': {sub:'中游·地面设备', thesis:'航天粉煤加压气化/地面系统', risk:'中', riskCls:'rt-mid', stars:'★★★★', maturity:70, stage:'验证期'},
+  '600498': {sub:'中游·通信', thesis:'卫星互联网地面段核心', risk:'中', riskCls:'rt-mid', stars:'★★★★', maturity:82, stage:'小批量'},
+  '688387': {sub:'中游·通信', thesis:'5G/卫星通信基站', risk:'高', riskCls:'rt-high', stars:'★★', maturity:55, stage:'验证期'},
+  '300474': {sub:'中游·芯片', thesis:'GPU芯片,卫星图像处理', risk:'中', riskCls:'rt-mid', stars:'★★★', maturity:60, stage:'验证期'},
+  '601698': {sub:'下游·运营', thesis:'卫星通信运营独家', risk:'低', riskCls:'rt-low', stars:'★★★★', maturity:88, stage:'商业化'},
+  // 半导体
+  '002371': {sub:'设备', thesis:'刻蚀/薄膜/清洗全平台设备龙头', risk:'中', riskCls:'rt-mid', stars:'★★★★★'},
+  '688012': {sub:'设备', thesis:'等离子体刻蚀全球领先', risk:'中', riskCls:'rt-mid', stars:'★★★★★'},
+  '688072': {sub:'设备', thesis:'CVD/PVD薄膜沉积', risk:'中', riskCls:'rt-mid', stars:'★★★★'},
+  '688120': {sub:'设备', thesis:'CMP化学机械抛光设备', risk:'中', riskCls:'rt-mid', stars:'★★★★'},
+  '688126': {sub:'材料', thesis:'大硅片国产替代龙头', risk:'中', riskCls:'rt-mid', stars:'★★★★'},
+  '002409': {sub:'材料', thesis:'前驱体/光刻胶材料', risk:'中', riskCls:'rt-mid', stars:'★★★★'},
+  '688256': {sub:'AI芯片', thesis:'国产AI训练芯片稀缺标的', risk:'高', riskCls:'rt-high', stars:'★★★'},
+  '688041': {sub:'AI芯片', thesis:'国产CPU/GPU龙头', risk:'中', riskCls:'rt-mid', stars:'★★★★★'},
+  '688981': {sub:'制造', thesis:'中国大陆最大晶圆代工厂', risk:'中', riskCls:'rt-mid', stars:'★★★★'},
+  // 电力
+  '600900': {sub:'水电', thesis:'全球最大水电公司,稳定高股息', risk:'低', riskCls:'rt-low', stars:'★★★★★'},
+  '003816': {sub:'核电', thesis:'国内核电运营双寡头之一', risk:'低', riskCls:'rt-low', stars:'★★★★★'},
+  '600905': {sub:'新能源', thesis:'风电+光伏装机第一梯队', risk:'低', riskCls:'rt-low', stars:'★★★★'},
+  '600406': {sub:'电网', thesis:'电网自动化/调度龙头', risk:'低', riskCls:'rt-low', stars:'★★★★★'},
+  '600089': {sub:'电网', thesis:'特高压变压器/新能源EPC', risk:'中', riskCls:'rt-mid', stars:'★★★★'},
+  '002028': {sub:'电网', thesis:'电力电子/继电保护', risk:'低', riskCls:'rt-low', stars:'★★★★'},
+  '300274': {sub:'储能', thesis:'逆变器+储能系统全球龙头', risk:'中', riskCls:'rt-mid', stars:'★★★★'},
+  '300750': {sub:'储能', thesis:'全球动力/储能电池霸主', risk:'中', riskCls:'rt-mid', stars:'★★★★★'},
+  '688390': {sub:'储能', thesis:'组串式逆变器+储能变流器', risk:'中', riskCls:'rt-mid', stars:'★★★'},
+};
+
+// ─── Init ───
+let radarChart = null;
+
+async function loadData() {
+  const statusEl = document.getElementById('dataStatus');
+  try {
+    const resp = await fetch('data.json?t=' + Date.now());
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    D = await resp.json();
+
+    const ageMin = Math.round((Date.now() - new Date(D.update_time).getTime()) / 60000);
+    if (ageMin < 60) {
+      statusEl.innerHTML = '<span class="data-fresh">🟢 实时数据</span>';
+    } else if (ageMin < 240) {
+      statusEl.innerHTML = '<span class="data-stale">🟡 ' + ageMin + '分钟前</span>';
+    } else {
+      statusEl.innerHTML = '<span class="data-stale">🔴 ' + Math.round(ageMin/60) + '小时前</span>';
+    }
+
+    updateHeader();
+    updateOverview();
+    updateStockTables();
+    drawRadar();
+    document.getElementById('footer-time').textContent = D.update_time;
+  } catch (e) {
+    console.error('数据加载失败:', e);
+    statusEl.innerHTML = '<span class="data-stale">⚠️ 数据加载失败</span>';
+    // 从 localStorage 加载缓存
+    const cached = localStorage.getItem('stock_dashboard_cache');
+    if (cached) {
+      D = JSON.parse(cached);
+      updateHeader();
+      updateOverview();
+      updateStockTables();
+    }
+  }
+}
+
+function updateHeader() {
+  const meta = document.getElementById('header-meta');
+  if (!D || !D.indices) return;
+  const idx = D.indices;
+  let shClr = '#fff', szClr = '#fff', kcClr = '#fff';
+  try { shClr = parseFloat(idx.sh_index?.change_pct_value || 0) >= 0 ? '#86efac' : '#fca5a5'; } catch(e){}
+  try { szClr = parseFloat(idx.sz_index?.change_pct_value || 0) >= 0 ? '#86efac' : '#fca5a5'; } catch(e){}
+  try { kcClr = parseFloat(idx.kc50?.change_pct_value || 0) >= 0 ? '#86efac' : '#fca5a5'; } catch(e){}
+
+  meta.innerHTML = `
+    <span>📅 ${D.update_date}</span>
+    <span>📈 上证 ${idx.sh_index?.price || '--'}</span>
+    <span style="color:${shClr}">${idx.sh_index?.change_pct || '--'}</span>
+    <span>📊 深证 ${idx.sz_index?.price || '--'}</span>
+    <span style="color:${szClr}">${idx.sz_index?.change_pct || '--'}</span>
+    <span>🔬 科创50 ${idx.kc50?.price || '--'}</span>
+    <span style="color:${kcClr}">${idx.kc50?.change_pct || '--'}</span>
+    <span>💹 成交 ${idx.volume || '--'}</span>
+    <span>🕐 ${D.update_time?.slice(11,19) || '--'}</span>
+  `;
+}
+
+function updateOverview() {
+  if (!D || !D.indices) return;
+  const idx = D.indices;
+  document.getElementById('ov-volume').textContent = idx.volume || '--';
+  document.getElementById('ov-volume-sub').textContent = idx.volume_note || '--';
+  document.getElementById('ov-chip-ytd').textContent = idx.chip_index_ytd || '--';
+  document.getElementById('ov-chip-note').textContent = idx.chip_index_note || '--';
+  document.getElementById('ov-power-pe').textContent = idx.power_pe || '--';
+  document.getElementById('ov-power-note').textContent = idx.power_pe_note || '--';
+}
+
+function updateStockTables() {
+  if (!D || !D.stocks) return;
+  const sectors = {
+    'aerospace': { tbody: 'tbody-aerospace', sector: '商业航天' },
+    'chip': { tbody: 'tbody-chip', sector: '半导体' },
+    'power': { tbody: 'tbody-power', sector: '电力' }
+  };
+
+  for (const [key, cfg] of Object.entries(sectors)) {
+    const stocks = D.stocks.filter(s => s.sector === cfg.sector);
+    const tbody = document.getElementById(cfg.tbody);
+    if (!tbody) continue;
+
+    const metaKey = key === 'aerospace' ? 'aerospace' : (key === 'chip' ? 'chip' : 'power');
+    const rows = stocks.map(s => {
+      const meta = STOCK_META[s.code] || {};
+      const price = s.price || '--';
+      const chg = s.change_pct || '--';
+      const trendCls = s.trend === 'up' ? 'trend-up' : (s.trend === 'down' ? 'trend-down' : 'trend-flat');
+      const risk = meta.risk || '中';
+      const riskCls = meta.riskCls || 'rt-mid';
+
+      let extra = '';
+      if (key === 'aerospace') {
+        extra = `<td>${meta.sub || s.subsector}</td><td>${meta.thesis || ''} <span class="stars">${meta.stars || ''}</span></td>`;
+      } else {
+        extra = `<td>${meta.sub || s.subsector}</td><td>${meta.thesis || ''}</td>`;
+      }
+
+      return `<tr>
+        <td><span class="stock-name">${s.name}</span><span class="stock-code">${s.code}</span></td>
+        ${extra}
+        <td>${price}</td>
+        <td class="${trendCls}">${chg}</td>
+        <td><span class="rt ${riskCls}">${risk}风险</span></td>
+      </tr>`;
+    }).join('');
+
+    tbody.innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:var(--slate-400)">暂无数据</td></tr>';
+  }
+}
+
+function drawRadar() {
+  const canvas = document.getElementById('radarChart');
+  if (!canvas) return;
+  if (radarChart) radarChart.destroy();
+
+  radarChart = new Chart(canvas, {
+    type: 'radar',
+    data: {
+      labels: ['确定性', '弹性', '估值安全', '政策催化', '业绩兑现'],
+      datasets: [
+        { label: '半导体', data: [92, 90, 35, 85, 70], borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', borderWidth:2, pointRadius:4 },
+        { label: '商业航天', data: [55, 95, 50, 90, 30], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)', borderWidth:2, pointRadius:4 },
+        { label: '电力', data: [90, 45, 88, 80, 92], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)', borderWidth:2, pointRadius:4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: { r: { beginAtZero: true, max: 100, ticks: { display: false } } },
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }
+    }
+  });
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const sec = document.getElementById('sec-' + name);
+  if (sec) sec.classList.add('active');
+  const btns = document.querySelectorAll('.nav-tab');
+  btns.forEach(b => {
+    if (b.textContent.toLowerCase().includes(name) || (name === 'chip' && b.textContent.includes('半导体')) || (name === 'power' && b.textContent.includes('电力')) || (name === 'aerospace' && b.textContent.includes('航天')) || (name === 'macro' && b.textContent.includes('宏观')) || (name === 'risk' && b.textContent.includes('风险')) || (name === 'portfolio' && b.textContent.includes('配置')) || (name === 'overview' && b.textContent.includes('总览'))) {
+      b.classList.add('active');
+    }
+  });
+
+  // 切到总览时重绘雷达图
+  if (name === 'overview') setTimeout(drawRadar, 200);
+}
+
+// 缓存数据到 localStorage
+function cacheData() {
+  if (D) {
+    try { localStorage.setItem('stock_dashboard_cache', JSON.stringify(D)); } catch(e) {}
+  }
+}
+
+// ─── Boot ───
+loadData().then(cacheData);
+
+// 每 5 分钟自动刷新 (仅交易时段)
+setInterval(() => {
+  const now = new Date();
+  const isTradingHour = now.getDay() >= 1 && now.getDay() <= 5 && now.getHours() >= 9 && now.getHours() < 15;
+  if (isTradingHour) {
+    loadData().then(cacheData);
+  }
+}, 5 * 60 * 1000);
+</script>
+</body>
+</html>
