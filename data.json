@@ -1,24 +1,14 @@
 {
-  "update_time": "2026-05-21 18:29:27",
+  "update_time": "2026-05-21 19:34:45",
   "update_date": "2026-05-21",
   "is_trading": false,
-  "indices": {
-    "volume": "--",
-    "volume_days": "--",
-    "volume_note": "--",
-    "chip_index_name": "科创芯片",
-    "chip_index_ytd": "+47.83",
-    "chip_index_ytd_value": 47.83,
-    "chip_index_note": "年内最强指数之一",
-    "power_pe": "~12x",
-    "power_pe_note": "过去五年 30% 以下分位"
-  },
+  "indices": {},
   "stocks": [
     {
-      "code": "301005",
-      "name": "超捷股份",
+      "code": "688375",
+      "name": "国博电子",
       "sector": "商业航天",
-      "subsector": "上游·火箭制造",
+      "subsector": "中游·卫星载荷",
       "price": "--",
       "change_pct": "--",
       "change_pct_value": 0,
@@ -41,23 +31,10 @@
       "trend": "flat"
     },
     {
-      "code": "688281",
-      "name": "华秦科技",
+      "code": "600498",
+      "name": "烽火通信",
       "sector": "商业航天",
-      "subsector": "上游·火箭制造",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
-      "pe": "--",
-      "trend": "flat"
-    },
-    {
-      "code": "688375",
-      "name": "国博电子",
-      "sector": "商业航天",
-      "subsector": "中游·卫星载荷",
+      "subsector": "中游·通信",
       "price": "--",
       "change_pct": "--",
       "change_pct_value": 0,
@@ -80,10 +57,10 @@
       "trend": "flat"
     },
     {
-      "code": "600498",
-      "name": "烽火通信",
+      "code": "601698",
+      "name": "中国卫通",
       "sector": "商业航天",
-      "subsector": "中游·通信",
+      "subsector": "下游·运营",
       "price": "--",
       "change_pct": "--",
       "change_pct_value": 0,
@@ -106,10 +83,10 @@
       "trend": "flat"
     },
     {
-      "code": "300474",
-      "name": "景嘉微",
+      "code": "688281",
+      "name": "华秦科技",
       "sector": "商业航天",
-      "subsector": "中游·芯片",
+      "subsector": "上游·火箭制造",
       "price": "--",
       "change_pct": "--",
       "change_pct_value": 0,
@@ -119,10 +96,23 @@
       "trend": "flat"
     },
     {
-      "code": "601698",
-      "name": "中国卫通",
+      "code": "301005",
+      "name": "超捷股份",
       "sector": "商业航天",
-      "subsector": "下游·运营",
+      "subsector": "上游·火箭制造",
+      "price": "--",
+      "change_pct": "--",
+      "change_pct_value": 0,
+      "volume_万": "--",
+      "turnover_亿": "--",
+      "pe": "--",
+      "trend": "flat"
+    },
+    {
+      "code": "300474",
+      "name": "景嘉微",
+      "sector": "商业航天",
+      "subsector": "中游·芯片",
       "price": "--",
       "change_pct": "--",
       "change_pct_value": 0,
@@ -366,5 +356,6 @@
       "trend": "flat"
     }
   ],
-  "note": "共覆盖 27 只股票，数据来源 akshare"
+  "sectors": [],
+  "note": "东方财富实时行情 + 灵犀金融增强"
 }
