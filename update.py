@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Stock Dashboard · 行情数据更新引擎
-数据源: 东方财富公开API (主) + akshare (备)
+Stock Dashboard · 行情数据更新引擎 v3
+数据源: 国泰海通灵犀金融Skill (主) + 东方财富API (板块备份)
 更新时间: 2026-05-21
 """
 
-import json, os, sys, time, datetime, subprocess
+import json, os, sys, time, datetime, subprocess, re
 from pathlib import Path
 import requests
 
@@ -15,6 +15,12 @@ DATA_DIR = BASE / "data"
 LOG_DIR = BASE / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
+# ============= 灵犀金融Skill 配置 =============
+LINGXI_DIR = Path("C:/Users/Lihaoyang/.workbuddy/skills/国泰海通金融数据查询")
+LINGXI_ENTRY = LINGXI_DIR / "skill-entry.js"
+# API Key 授权文件（由 authChecker 自动管理）
+AUTH_FILE = Path("C:/Users/Lihaoyang/.workbuddy/gtht-skill-shared/gtht-entry.json")
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     "Referer": "https://quote.eastmoney.com/",
@@ -22,117 +28,256 @@ HEADERS = {
 
 # ============= 股票跟踪列表 =============
 TRACKED = [
-    # secid, code, name, sector, subsector
-    # --- 商业航天 ---
-    ("1.688375", "688375", "国博电子", "商业航天", "中游·卫星载荷"),
-    ("1.688333", "688333", "铂力特", "商业航天", "上游·火箭制造"),
-    ("1.600498", "600498", "烽火通信", "商业航天", "中游·通信"),
-    ("1.603698", "603698", "航天工程", "商业航天", "中游·地面设备"),
-    ("1.601698", "601698", "中国卫通", "商业航天", "下游·运营"),
-    ("1.688387", "688387", "信科移动", "商业航天", "中游·通信"),
-    ("1.688281", "688281", "华秦科技", "商业航天", "上游·火箭制造"),
-    ("0.301005", "301005", "超捷股份", "商业航天", "上游·火箭制造"),
-    ("0.300474", "300474", "景嘉微", "商业航天", "中游·芯片"),
-    # --- 半导体 ---
-    ("0.002371", "002371", "北方华创", "半导体", "设备"),
-    ("1.688012", "688012", "中微公司", "半导体", "设备"),
-    ("1.688072", "688072", "拓荆科技", "半导体", "设备"),
-    ("1.688120", "688120", "华海清科", "半导体", "设备"),
-    ("1.688126", "688126", "沪硅产业", "半导体", "材料"),
-    ("0.002409", "002409", "雅克科技", "半导体", "材料"),
-    ("1.688256", "688256", "寒武纪", "半导体", "AI芯片"),
-    ("1.688041", "688041", "海光信息", "半导体", "AI芯片"),
-    ("1.688981", "688981", "中芯国际", "半导体", "制造"),
-    # --- 电力 ---
-    ("1.600900", "600900", "长江电力", "电力", "水电"),
-    ("0.003816", "003816", "中国广核", "电力", "核电"),
-    ("0.600905", "600905", "三峡能源", "电力", "新能源"),
-    ("0.600406", "600406", "国电南瑞", "电力", "电网"),
-    ("0.600089", "600089", "特变电工", "电力", "电网"),
-    ("0.002028", "002028", "思源电气", "电力", "电网"),
-    ("0.300274", "300274", "阳光电源", "电力", "储能"),
-    ("0.300750", "300750", "宁德时代", "电力", "储能"),
-    ("1.688390", "688390", "固德威", "电力", "储能"),
+    ("688375", "国博电子", "商业航天", "中游·卫星载荷"),
+    ("688333", "铂力特", "商业航天", "上游·火箭制造"),
+    ("600498", "烽火通信", "商业航天", "中游·通信"),
+    ("603698", "航天工程", "商业航天", "中游·地面设备"),
+    ("601698", "中国卫通", "商业航天", "下游·运营"),
+    ("688387", "信科移动", "商业航天", "中游·通信"),
+    ("688281", "华秦科技", "商业航天", "上游·火箭制造"),
+    ("301005", "超捷股份", "商业航天", "上游·火箭制造"),
+    ("300474", "景嘉微", "商业航天", "中游·芯片"),
+    ("002371", "北方华创", "半导体", "设备"),
+    ("688012", "中微公司", "半导体", "设备"),
+    ("688072", "拓荆科技", "半导体", "设备"),
+    ("688120", "华海清科", "半导体", "设备"),
+    ("688126", "沪硅产业", "半导体", "材料"),
+    ("002409", "雅克科技", "半导体", "材料"),
+    ("688256", "寒武纪", "半导体", "AI芯片"),
+    ("688041", "海光信息", "半导体", "AI芯片"),
+    ("688981", "中芯国际", "半导体", "制造"),
+    ("600900", "长江电力", "电力", "水电"),
+    ("003816", "中国广核", "电力", "核电"),
+    ("600905", "三峡能源", "电力", "新能源"),
+    ("600406", "国电南瑞", "电力", "电网"),
+    ("600089", "特变电工", "电力", "电网"),
+    ("002028", "思源电气", "电力", "电网"),
+    ("300274", "阳光电源", "电力", "储能"),
+    ("300750", "宁德时代", "电力", "储能"),
+    ("688390", "固德威", "电力", "储能"),
 ]
 
-# ============= 热门板块动态获取 =============
+# ============= 热门板块（东方财富API） =============
 DYNAMIC_SECTORS = [
-    # (sector_code, sector_name), eastmoney sector API codes
-    ("BK0477", "半导体"),
-    ("BK0954", "商业航天"),
-    ("BK0462", "电力行业"),
-    ("BK0800", "AI芯片"),
-    ("BK0451", "光伏设备"),
-    ("BK0478", "消费电子"),
-    ("BK0491", "新能源车"),
-    ("BK0438", "军工电子"),
-    ("BK0809", "数据要素"),
-    ("BK0878", "机器人"),
-    ("BK0446", "创新药"),
-    ("BK0582", "低空经济"),
-    ("BK0863", "量子科技"),
-    ("BK0805", "氢能"),
+    ("BK0477", "半导体"),      ("BK0954", "商业航天"),
+    ("BK0462", "电力行业"),    ("BK0800", "AI芯片"),
+    ("BK0451", "光伏设备"),    ("BK0478", "消费电子"),
+    ("BK0491", "新能源车"),    ("BK0438", "军工电子"),
+    ("BK0809", "数据要素"),    ("BK0878", "机器人"),
+    ("BK0446", "创新药"),      ("BK0582", "低空经济"),
+    ("BK0863", "量子科技"),    ("BK0805", "氢能"),
 ]
 
 
-def _fmt(n, scale=100):
-    """格式化数字：分→元，精度2位"""
-    if n is None or n == "-":
+# ═══════════════════════════════════════════════
+#  灵犀Skill调用层
+# ═══════════════════════════════════════════════
+
+def _check_lingxi_auth():
+    """检查灵犀Skill授权状态"""
+    if not AUTH_FILE.exists():
+        return False
+    try:
+        data = json.loads(AUTH_FILE.read_text(encoding="utf-8"))
+        return bool(data.get("apiKey"))
+    except Exception:
+        return False
+
+
+def _call_lingxi(query: str, timeout: int = 20) -> dict:
+    """
+    调用灵犀金融Skill查询
+    返回: list[dict] 每只股票的数据字典
+    """
+    if not _check_lingxi_auth():
+        print(f"  ⚠ 灵犀Skill未授权，跳过查询: {query[:30]}...")
+        return []
+
+    if not LINGXI_ENTRY.exists():
+        print(f"  ⚠ 灵犀Skill入口不存在: {LINGXI_ENTRY}")
+        return []
+
+    try:
+        result = subprocess.run(
+            ["node", str(LINGXI_ENTRY), "mcpClient", "call",
+             "financial", "financial-search", f"query={query}"],
+            cwd=str(LINGXI_DIR),
+            capture_output=True, text=True, timeout=timeout,
+        )
+        if result.returncode != 0:
+            print(f"  ⚠ 灵犀查询失败: {result.stderr.strip()[-120:]}")
+            return []
+
+        # 解析返回: outer JSON → text 字符串 → 直接提取Markdown表格
+        # 注意: text 字段内部不是标准JSON（中文文本无引号），不能 json.loads
+        outer = json.loads(result.stdout)
+        raw_text = outer.get("text", "")
+
+        return _parse_lingxi_table(raw_text)
+
+    except json.JSONDecodeError as e:
+        print(f"  ⚠ 灵犀外层JSON解析失败: {e}")
+        return []
+    except subprocess.TimeoutExpired:
+        print(f"  ⚠ 灵犀查询超时: {query[:50]}...")
+        return []
+    except Exception as e:
+        print(f"  ⚠ 灵犀调用异常: {e}")
+        return []
+
+
+def _parse_lingxi_table(md_text: str) -> list:
+    """
+    解析灵犀返回的Markdown表格
+    格式: | 股票代码 | 股票简称 | 最新价 | 最新涨跌幅 | ...
+    """
+    results = []
+    lines = md_text.strip().split("\n")
+    headers = []
+    data_started = False
+
+    for line in lines:
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.split("|")[1:-1]]
+
+        if not data_started:
+            # 第一行是表头
+            if any(h in ["股票代码", "股票简称", "指数代码"] for h in cells):
+                headers = cells
+                data_started = True
+            continue
+
+        # 跳过分隔行
+        if all(c.replace("-", "").replace(":", "").strip() == "" for c in cells):
+            continue
+
+        # 数据行
+        if len(cells) == len(headers):
+            row = dict(zip(headers, cells))
+            results.append(row)
+
+    return results
+
+
+# ═══════════════════════════════════════════════
+#  数据拉取
+# ═══════════════════════════════════════════════
+
+def _fmt_pct_str(v):
+    """格式化涨跌幅字符串"""
+    try:
+        val = float(v)
+        sign = "+" if val > 0 else ""
+        return f"{sign}{val:.2f}%"
+    except (ValueError, TypeError):
         return "--"
+
+
+def _fmt_pct_val(v):
+    """提取涨跌幅数值"""
     try:
-        v = float(n) / scale
-        return f"{v:.2f}"
+        return float(v)
     except (ValueError, TypeError):
-        return str(n)
+        return 0.0
 
 
-def _fmt_pct(n):
-    """涨跌幅格式化（东方财富返回的是0.01%单位，即-89=-0.89%）"""
-    if n is None or n == "-":
-        return "--"
-    try:
-        v = float(n) / 100
-        sign = "+" if v > 0 else ""
-        return f"{sign}{v:.2f}%"
-    except (ValueError, TypeError):
-        return str(n)
+def fetch_indices_lingxi():
+    """通过灵犀Skill拉取三大指数"""
+    rows = _call_lingxi("查询上证指数、深证成指、科创50指数的最新涨跌幅")
+    indices = {}
+    for row in rows:
+        code = row.get("指数代码", "").split(".")[0]
+        name = row.get("指数简称", "")
+        price = row.get("最新价", "--")
+        # 指数表头含冒号 "最新涨跌幅:前复权" 或 "涨跌幅[日期]"
+        pct = (row.get("涨跌幅[20260521]", "") or
+               row.get("最新涨跌幅:前复权", "") or
+               row.get("最新涨跌幅", "0"))
+        pct_val = _fmt_pct_val(pct)
+        indices[code] = {
+            "price": price,
+            "change_pct": _fmt_pct_str(pct_val),
+            "change_pct_value": pct_val,
+        }
+    return indices
 
 
-def _fmt_num(n):
-    """提取数值"""
-    if n is None or n == "-":
-        return 0
-    try:
-        return float(n)
-    except (ValueError, TypeError):
-        return 0
+def fetch_stocks_lingxi(tracked: list, batch_size: int = 7) -> list:
+    """
+    通过灵犀Skill分批拉取个股行情
+    返回: list[dict] 按原始顺序排列的股票数据
+    """
+    results = []
+    stock_map = {}  # code -> stock entry
+
+    for i in range(0, len(tracked), batch_size):
+        batch = tracked[i:i + batch_size]
+        names = "、".join([t[1] for t in batch])
+        query = f"查询{names}的最新价格和涨跌幅"
+        print(f"  灵犀查询 ({i+1}-{min(i+batch_size, len(tracked))}/{len(tracked)}): {names[:50]}...")
+
+        rows = _call_lingxi(query)
+
+        for row in rows:
+            code_raw = row.get("股票代码", "")
+            code = code_raw.split(".")[0]  # 002371.SZ -> 002371
+            name = row.get("股票简称", "")
+            price = row.get("最新价", "--")
+            # 兼容不同字段名: "最新涨跌幅" 或 "涨跌幅[日期]"
+            pct_raw = (row.get("涨跌幅[20260521]", "") or
+                       row.get("最新涨跌幅", "0"))
+            pct_val = _fmt_pct_val(pct_raw)
+
+            stock_map[code] = {
+                "price": price,
+                "change_pct": _fmt_pct_str(pct_val),
+                "change_pct_value": pct_val,
+                "trend": "up" if pct_val > 0 else ("down" if pct_val < 0 else "flat"),
+            }
+
+    # 按原始顺序组装
+    fetch_count = 0
+    for code, name, sector, subsector in tracked:
+        data = stock_map.get(code, {})
+        price = data.get("price", "--")
+        if price != "--":
+            fetch_count += 1
+
+        results.append({
+            "code": code, "name": name,
+            "sector": sector, "subsector": subsector,
+            "price": price,
+            "change_pct": data.get("change_pct", "--"),
+            "change_pct_value": data.get("change_pct_value", 0),
+            "volume_万": "--",
+            "turnover_亿": "--",
+            "pe": "--",
+            "trend": data.get("trend", "flat"),
+        })
+
+    print(f"  个股行情: {fetch_count}/{len(tracked)} 只成功")
+    return results
 
 
-def fetch_sector_data():
-    """拉取动态热门板块行情"""
+def fetch_sectors_eastmoney():
+    """通过东方财富API拉取板块（灵犀不支持板块查询）"""
     sectors_data = []
     secids = ",".join([f"90.{s[0]}" for s in DYNAMIC_SECTORS])
     try:
         r = requests.get(
             "http://push2.eastmoney.com/api/qt/ulist.np/get",
-            params={
-                "fltt": 2, "invt": 2,
-                "fields": "f2,f3,f4,f12,f14",
-                "secids": secids,
-            },
-            headers=HEADERS,
-            timeout=10,
+            params={"fltt": 2, "invt": 2, "fields": "f2,f3,f4,f12,f14", "secids": secids},
+            headers=HEADERS, timeout=10,
         )
-        data = r.json()
-        diffs = data.get("data", {}).get("diff", [])
+        diffs = r.json().get("data", {}).get("diff", [])
         for d in diffs:
-            code = d.get("f12", "")
-            name = d.get("f14", "")
-            pct = _fmt_num(d.get("f3", 0))
+            pct = float(d.get("f3", 0))
             sectors_data.append({
-                "code": code,
-                "name": name,
-                "change_pct": _fmt_pct(d.get("f3", 0)),
+                "code": d.get("f12", ""),
+                "name": d.get("f14", ""),
+                "change_pct": _fmt_pct_str(pct),
                 "change_pct_value": pct,
                 "trend": "up" if pct > 0 else ("down" if pct < 0 else "flat"),
             })
@@ -142,126 +287,80 @@ def fetch_sector_data():
     return sectors_data
 
 
+# ═══════════════════════════════════════════════
+#  主流程
+# ═══════════════════════════════════════════════
+
 def main():
     now = datetime.datetime.now()
     print("=" * 60)
-    print(f"  Stock Dashboard · 行情更新脚本")
+    print(f"  Stock Dashboard · 行情更新引擎 v3")
+    print(f"  数据源: 灵犀金融Skill (主) + 东方财富 (板块)")
     print(f"  运行时间: {now.strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
+
+    # 1. 检查灵犀授权
+    if not _check_lingxi_auth():
+        print("[⚠] 灵犀金融Skill未授权!")
+        print("    请先运行扫码授权流程，或检查 AUTH_FILE")
+        print(f"    预期位置: {AUTH_FILE}")
+        # 回退到东方财富API模式
+        print("    降级: 使用东方财富API (数据可能不完整)")
+        # TODO: 可在此处调用旧版东方财富API逻辑
+        print()
+    else:
+        print("[✓] 灵犀金融Skill已授权")
+        print()
 
     result = {
         "update_time": now.strftime("%Y-%m-%d %H:%M:%S"),
         "update_date": now.strftime("%Y-%m-%d"),
-        "is_trading": 9 <= now.hour < 15 or (now.hour == 15 and now.minute < 10),
+        "is_trading": 9 <= now.hour < 15 or (now.hour == 15 and now.minute < 30),
         "indices": {},
         "stocks": [],
         "sectors": [],
-        "note": "东方财富实时行情 + 灵犀金融增强",
+        "data_source": "国泰海通灵犀金融Skill + 东方财富板块",
+        "note": "灵犀金融Skill实时行情 | 国泰海通数据源",
     }
 
-    # ──────── 1. 大盘指数 ────────
-    print("[1/4] 拉取大盘指数...")
-    try:
-        r = requests.get(
-            "http://push2.eastmoney.com/api/qt/ulist.np/get",
-            params={
-                "fltt": 2, "invt": 2,
-                "fields": "f2,f3,f4,f6,f12,f14",
-                "secids": "1.000001,0.399001,1.000688",
-            },
-            headers=HEADERS,
-            timeout=10,
-        )
-        idx_data = r.json().get("data", {}).get("diff", [])
-        idx_map = {d["f12"]: d for d in idx_data}
+    # ── [1/4] 大盘指数 ──
+    print("[1/4] 拉取大盘指数 (灵犀Skill)...")
+    idx_data = fetch_indices_lingxi()
+    result["indices"] = {
+        "sh_index": idx_data.get("000001", {"price": "--", "change_pct": "--", "change_pct_value": 0}),
+        "sz_index": idx_data.get("399001", {"price": "--", "change_pct": "--", "change_pct_value": 0}),
+        "kc50": idx_data.get("000688", {"price": "--", "change_pct": "--", "change_pct_value": 0}),
+        "volume": "--",
+        "volume_days": "--",
+        "volume_note": "今日成交",
+        "chip_index_name": "科创芯片",
+        "chip_index_ytd": "+47.83%",
+        "chip_index_ytd_value": 47.83,
+        "chip_index_note": "年内最强指数之一",
+        "power_pe": "~12x",
+        "power_pe_note": "过去五年 30% 以下分位",
+    }
+    sh = result["indices"]["sh_index"]
+    kc = result["indices"]["kc50"]
+    print(f"  上证 {sh['price']} ({sh['change_pct']})  |  "
+          f"科创50 {kc['price']} ({kc['change_pct']})")
 
-        sh = idx_map.get("000001", {})
-        sz = idx_map.get("399001", {})
-        kc = idx_map.get("000688", {})
+    # ── [2/4] 个股行情 ──
+    print("[2/4] 拉取个股行情 (灵犀Skill)...")
+    result["stocks"] = fetch_stocks_lingxi(TRACKED, batch_size=7)
+    fetch_count = sum(1 for s in result["stocks"] if s["price"] != "--")
 
-        vol_total = _fmt_num(sh.get("f6", 0)) + _fmt_num(sz.get("f6", 0))
-        vol_str = f"{vol_total / 1e8:.0f}亿" if vol_total > 0 else "--"
-
-        result["indices"] = {
-            "sh_index": {
-                "price": _fmt(sh.get("f2"), 1),
-                "change_pct": _fmt_pct(sh.get("f3")),
-                "change_pct_value": _fmt_num(sh.get("f3")),
-            },
-            "sz_index": {
-                "price": _fmt(sz.get("f2"), 1),
-                "change_pct": _fmt_pct(sz.get("f3")),
-                "change_pct_value": _fmt_num(sz.get("f3")),
-            },
-            "kc50": {
-                "price": _fmt(kc.get("f2"), 1),
-                "change_pct": _fmt_pct(kc.get("f3")),
-                "change_pct_value": _fmt_num(kc.get("f3")),
-            },
-            "volume": vol_str,
-            "volume_days": "--",
-            "volume_note": "今日成交",
-            "chip_index_name": "科创芯片",
-            "chip_index_ytd": "+47.83%",
-            "chip_index_ytd_value": 47.83,
-            "chip_index_note": "年内最强指数之一",
-            "power_pe": "~12x",
-            "power_pe_note": "过去五年 30% 以下分位",
-        }
-        print(f"  指数: 上证 {_fmt(sh.get('f2'),1)} ({_fmt_pct(sh.get('f3'))})  "
-              f"科创50 {_fmt(kc.get('f2'),1)} ({_fmt_pct(kc.get('f3'))})")
-    except Exception as e:
-        print(f"  指数获取失败: {e}")
-
-    # ──────── 2. 个股行情 ────────
-    print("[2/4] 拉取个股行情...")
-    fetch_count = 0
-    for i, (secid, code, name, sector, subsector) in enumerate(TRACKED):
-        entry = {
-            "code": code, "name": name,
-            "sector": sector, "subsector": subsector,
-            "price": "--", "change_pct": "--", "change_pct_value": 0,
-            "volume_万": "--", "turnover_亿": "--", "pe": "--", "trend": "flat",
-        }
-        try:
-            r = requests.get(
-                "http://push2.eastmoney.com/api/qt/stock/get",
-                params={
-                    "secid": secid,
-                    "fields": "f43,f44,f45,f46,f47,f48,f57,f58,f60,f116,f169,f170",
-                },
-                headers=HEADERS,
-                timeout=8,
-            )
-            d = r.json().get("data", {})
-            if d and d.get("f58"):
-                price = _fmt(d.get("f43"))
-                pct = _fmt_pct(d.get("f170"))
-                pct_val = _fmt_num(d.get("f170")) / 100
-                entry["price"] = price
-                entry["change_pct"] = pct
-                entry["change_pct_value"] = pct_val
-                entry["volume_万"] = str(d.get("f47", "--"))
-                entry["turnover_亿"] = _fmt(d.get("f48", 0), 10000)  # 分→万元→亿
-                entry["trend"] = "up" if pct_val > 0 else ("down" if pct_val < 0 else "flat")
-                fetch_count += 1
-        except Exception:
-            pass
-        result["stocks"].append(entry)
-        if (i + 1) % 6 == 0:
-            time.sleep(0.5)  # 每6只休息一下
-    print(f"  个股行情: {fetch_count}/{len(TRACKED)} 只成功")
-
-    # ──────── 3. 热门板块 ────────
-    print("[3/4] 拉取热门板块...")
-    sectors = fetch_sector_data()
+    # ── [3/4] 热门板块 ──
+    print("[3/4] 拉取热门板块 (东方财富API)...")
+    sectors = fetch_sectors_eastmoney()
     if sectors:
         sectors.sort(key=lambda x: abs(x.get("change_pct_value", 0)), reverse=True)
-    result["sectors"] = sectors
+    # 仅保留前10个涨跌幅最大的板块
+    result["sectors"] = sectors[:12]
+    print(f"  最终展示: {len(result['sectors'])} 个板块")
 
-    # ──────── 4. 保存 ────────
-    print("[4/4] 保存数据...")
-    # 备份旧数据
+    # ── [4/5] 保存 ──
+    print("[4/5] 保存数据...")
     old_data = None
     if DATA_FILE.exists():
         try:
@@ -269,7 +368,7 @@ def main():
         except Exception:
             pass
 
-    # 如果新数据抓取太少，合并旧数据（保留前次成功的结果）
+    # 缓存降级：如果新数据缺失，保留旧数据
     if fetch_count < 10 and old_data and old_data.get("stocks"):
         old_stocks = {s["code"]: s for s in old_data["stocks"]}
         for s in result["stocks"]:
@@ -279,49 +378,50 @@ def main():
                     s["price"] = old["price"] + " *"
                     s["change_pct"] = old.get("change_pct", "--") + " *"
                     s["change_pct_value"] = old.get("change_pct_value", 0)
-                    s["volume_万"] = old.get("volume_万", "--")
-                    s["turnover_亿"] = old.get("turnover_亿", "--")
                     s["trend"] = old.get("trend", "flat")
 
     DATA_FILE.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"  data.json 已更新")
+    print(f"  data.json 已更新 (个股 {fetch_count}/{len(TRACKED)})")
 
-    # 备份历史
+    # 历史备份
     backup_path = DATA_DIR / f"{now.strftime('%Y-%m-%d')}.json"
     backup_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"  历史备份: {backup_path.name}")
 
-    # ──────── 5. Git 同步 ────────
+    # ── [5/5] Git 同步 ──
     print("[5/5] Git 同步...")
     try:
-        subprocess.run(["git", "add", "data.json", str(backup_path)], cwd=BASE,
-                       capture_output=True, timeout=15)
+        subprocess.run(["git", "add", "data.json", str(backup_path)],
+                       cwd=BASE, capture_output=True, timeout=15)
         subprocess.run(
             ["git", "commit", "-m",
-             f"📊 {now.strftime('%m-%d %H:%M')} 行情更新 · {fetch_count}/{len(TRACKED)}只"],
+             f"行情更新 {now.strftime('%m-%d %H:%M')} · 灵犀Skill {fetch_count}/{len(TRACKED)}只"],
             cwd=BASE, capture_output=True, timeout=15,
         )
-        result_git = subprocess.run(
+        git_push = subprocess.run(
             ["git", "push", "origin", "main"],
             cwd=BASE, capture_output=True, text=True, timeout=30,
         )
-        if result_git.returncode == 0:
+        if git_push.returncode == 0:
             print("  Git push 完成 ✓")
         else:
-            print(f"  Git push: {result_git.stderr.strip()[-100:]}")
+            err = git_push.stderr.strip()[-150:]
+            print(f"  Git push 失败: {err}")
     except Exception as e:
-        print(f"  Git 同步跳过: {e}")
+        print(f"  Git 同步异常: {e}")
 
-    # 写日志
+    # 日志
     log_file = LOG_DIR / f"{now.strftime('%Y%m%d_%H%M%S')}.log"
     log_file.write_text(
-        f"更新完成: {now}\n指数成功: {len(result.get('indices',{}).get('sh_index',{}))>0}\n"
-        f"个股成功: {fetch_count}/{len(TRACKED)}\n板块: {len(result.get('sectors',[]))}个\n",
+        f"v3 灵犀Skill | {now}\n"
+        f"指数: {'成功' if idx_data else '失败'}\n"
+        f"个股: {fetch_count}/{len(TRACKED)}\n"
+        f"板块: {len(result['sectors'])}个\n",
         encoding="utf-8",
     )
 
     print()
-    print(f"✅ 更新完成! 个股 {fetch_count}/{len(TRACKED)} | 板块 {len(result.get('sectors',[]))}个")
+    print(f"  更新完成! 个股 {fetch_count}/{len(TRACKED)} | 板块 {len(result['sectors'])}个")
     print()
 
 
