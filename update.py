@@ -400,9 +400,10 @@ def main():
         except Exception:
             pass
 
-    # 缓存降级：如果新数据缺失，保留旧数据
-    if fetch_count < 10 and old_data and old_data.get("stocks"):
+    # 缓存降级：单只缺失股票从旧数据填充（不要求整体 fetch_count 阈值）
+    if old_data and old_data.get("stocks"):
         old_stocks = {s["code"]: s for s in old_data["stocks"]}
+        filled = 0
         for s in result["stocks"]:
             if s["price"] == "--" and s["code"] in old_stocks:
                 old = old_stocks[s["code"]]
@@ -411,6 +412,9 @@ def main():
                     s["change_pct"] = old.get("change_pct", "--") + " *"
                     s["change_pct_value"] = old.get("change_pct_value", 0)
                     s["trend"] = old.get("trend", "flat")
+                    filled += 1
+        if filled > 0:
+            print(f"  缓存降级: {filled} 只股票从旧数据填充（标记*）")
 
     DATA_FILE.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"  data.json 已更新 (个股 {fetch_count}/{len(TRACKED)})")
