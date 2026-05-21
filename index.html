@@ -519,14 +519,30 @@ async function refreshData(){
   // 销毁旧雷达图
   if(radarChart){radarChart.destroy();radarChart=null;}
 
-  // 重新加载
-  await loadData();
-
-  // 恢复按钮
-  btn.classList.remove('refreshing');
-  btn.textContent='🔄 刷新';
-  const now=new Date();
-  btn.title='上次刷新: '+now.toLocaleTimeString('zh-CN');
+  try{
+    // 重新加载（10秒超时保护，防止 fetch 卡死）
+    await Promise.race([
+      loadData(),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('刷新超时(10s)')),10000))
+    ]);
+  }catch(e){
+    console.error('刷新失败:',e.message);
+    // 兜底：如果 D 仍为空且刷新失败，用内嵌数据重建
+    if(!D){
+      const embed=document.getElementById('embedded-data');
+      if(embed){
+        try{D=JSON.parse(embed.textContent);buildAll();}catch(e2){}
+      }
+    }
+    // 显示错误提示
+    const ds=document.getElementById('ds');
+    if(ds)ds.innerHTML='<span class="ds-error">⚠️ 刷新失败，使用缓存</span>';
+  }finally{
+    // 无论如何都要恢复按钮状态
+    btn.classList.remove('refreshing');
+    btn.textContent='🔄 刷新';
+    btn.title='上次刷新: '+new Date().toLocaleTimeString('zh-CN');
+  }
 }
 
 function toggleAutoRefresh(){
