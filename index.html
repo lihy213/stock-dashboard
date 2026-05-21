@@ -75,6 +75,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
   <button class="nav-tab" data-tab="macro">🌐 宏观</button>
   <button class="nav-tab" data-tab="risk">⚠️ 风险</button>
   <button class="nav-tab" data-tab="portfolio">🎯 配置</button>
+  <button class="nav-tab" data-tab="changelog">📋 更新日志</button>
   <!-- 动态板块标签由 JS 注入 -->
 </nav>
 
@@ -153,6 +154,7 @@ function buildAll(){
   renderOverview();
   renderSectorStocks();
   drawRadar();
+  renderChangelog();
   // 缓存
   try{localStorage.setItem('sd_cache',JSON.stringify(D));}catch(e){}
 }
@@ -270,6 +272,18 @@ function renderOverview(){
         <div class="card"><div class="card-title">🟡 事件驱动</div><ul style="font-size:.82rem;padding-left:20px;color:var(--s600)"><li>国博电子 688375</li><li>铂力特 688333</li><li>航天工程 603698</li><li>烽火通信 600498</li></ul></div>
       </div>
     </section>
+    <section class="section" id="sec-changelog">
+      <h2 style="margin-bottom:12px;color:var(--b800)">📋 更新日志</h2>
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>版本记录</span>
+          <span style="font-size:.7rem;color:var(--s400);font-weight:400">数据源: changelog.json</span>
+        </div>
+        <div id="changelog-list" style="padding:4px 0">
+          <div class="loading-wrap" style="padding:20px"><div class="loading-spinner"></div></div>
+        </div>
+      </div>
+    </section>
   `);
 
   // Fill sector ratings
@@ -337,7 +351,62 @@ function drawRadar(){
   },options:{responsive:true,scales:{r:{min:0,max:100,ticks:{stepSize:20}}}}});
 }
 
-// ═══════════════════ 标签切换 ═══════════════════
+// ═══════════════════ 更新日志 ═══════════════════
+async function renderChangelog(){
+  const container = document.getElementById('changelog-list');
+  if(!container) return;
+  try{
+    const resp = await fetch('changelog.json?t='+Date.now());
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const cl = await resp.json();
+    if(!cl.entries||!cl.entries.length){
+      container.innerHTML = '<div class="empty-state">暂无更新记录</div>';
+      return;
+    }
+    // Show latest 20 entries, newest first
+    const entries = [...cl.entries].reverse().slice(0,20);
+
+    const tagColors = {
+      '功能更新': 'badge bd-blue',
+      '行情刷新': 'badge bd-green',
+      '数据修复': 'badge bd-amber',
+      '版本迭代': 'badge',
+    };
+    const tagStyle = { '功能更新':'background:var(--b100);color:var(--b700)',
+      '行情刷新':'background:var(--g100);color:#15803d',
+      '数据修复':'background:var(--a100);color:#92400e',
+      '版本迭代':'background:var(--s200);color:var(--s500)' };
+
+    const html = entries.map((e, i) => {
+      const isLatest = i === 0;
+      const cls = tagColors[e.tag||'版本迭代'] || 'badge';
+      const style = tagStyle[e.tag||'版本迭代'] || '';
+      return `<div class="timeline-item">
+        <div class="timeline-dot" style="${isLatest?'background:var(--b600);box-shadow:0 0 0 3px var(--b300);':''}"></div>
+        <div class="timeline-date">
+          ${e.date} 
+          <span class="${cls}" style="margin-left:8px;${style}">${e.tag}</span>
+          ${isLatest?' <span style="font-size:.62rem;color:var(--b500);margin-left:4px">● 最新</span>':''}
+        </div>
+        <div class="timeline-content" style="${isLatest?'font-weight:600':''}">${e.message}</div>
+        ${e.version?`<div style="font-size:.66rem;color:var(--s400);margin-top:2px">commit: ${e.version}</div>`:''}
+      </div>`;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="cg" style="margin-bottom:6px">
+        <div class="card" style="padding:10px 22px;background:var(--b50);text-align:center">
+          <span style="font-size:.78rem;font-weight:600;color:var(--b700)">📦 ${cl.project || '项目'}</span>
+          ${cl.repo?`<span style="margin-left:12px;font-size:.72rem;color:var(--s400)"><a href="${cl.repo}" style="color:var(--b500)">GitHub</a></span>`:''}
+          <span style="margin-left:12px;font-size:.72rem;color:var(--s400)">共 ${entries.length} 条记录</span>
+        </div>
+      </div>
+      <div class="timeline">${html}</div>`;
+  }catch(e){
+    console.error('Changelog load failed:', e);
+    container.innerHTML = '<div class="empty-state">⚠️ 更新日志加载失败，请刷新重试</div>';
+  }
+}
 function switchTab(key){
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===key));
   document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='sec-'+key));

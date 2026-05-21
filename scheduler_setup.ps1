@@ -30,7 +30,7 @@ Write-Host ""
 # 检查 Python 是否存在
 if (-not (Test-Path $PythonExe)) {
     Write-Host "[错误] Python venv 未找到: $PythonExe" -ForegroundColor Red
-    Write-Host "请先运行: python -m venv venv && venv\Scripts\pip install akshare jinja2 requests" -ForegroundColor Yellow
+    Write-Host "请先运行: python -m venv venv && venv\Scripts\pip install requests" -ForegroundColor Yellow
     exit 1
 }
 
@@ -65,7 +65,7 @@ $Settings = New-ScheduledTaskSettingsSet `
     -StartWhenAvailable `
     -RunOnlyIfNetworkAvailable `
     -MultipleInstances IgnoreNew `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
 
 $Principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -RunLevel Limited
 

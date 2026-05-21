@@ -14,6 +14,7 @@ DATA_FILE = BASE / "data.json"
 DATA_DIR = BASE / "data"
 LOG_DIR = BASE / "logs"
 LOG_DIR.mkdir(exist_ok=True)
+CHANGELOG_FILE = BASE / "changelog.json"
 
 # ============= 灵犀金融Skill 配置 =============
 LINGXI_DIR = Path("C:/Users/Lihaoyang/.workbuddy/skills/国泰海通金融数据查询")
@@ -287,6 +288,32 @@ def fetch_sectors_eastmoney():
     return sectors_data
 
 
+def _append_changelog(fetch_count: int, total: int, tag: str = "行情刷新"):
+    """追加一条更新日志到 changelog.json"""
+    now = datetime.datetime.now()
+    entry = {
+        "date": now.strftime("%Y-%m-%d %H:%M"),
+        "message": f"行情更新 {now.strftime('%m-%d %H:%M')} · 灵犀Skill {fetch_count}/{total}只",
+        "version": now.strftime("%H%M%S"),
+        "tag": tag,
+    }
+
+    changelog = {"project": "A股投资分析仪表盘", "repo": "https://github.com/lihy213/stock-dashboard", "entries": []}
+    if CHANGELOG_FILE.exists():
+        try:
+            changelog = json.loads(CHANGELOG_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    changelog.setdefault("entries", []).append(entry)
+    # 保留最近 50 条
+    if len(changelog["entries"]) > 50:
+        changelog["entries"] = changelog["entries"][-50:]
+
+    CHANGELOG_FILE.write_text(json.dumps(changelog, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"  changelog.json 已追加 (#{len(changelog['entries'])})")
+
+
 # ═══════════════════════════════════════════════
 #  主流程
 # ═══════════════════════════════════════════════
@@ -383,6 +410,9 @@ def main():
     DATA_FILE.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"  data.json 已更新 (个股 {fetch_count}/{len(TRACKED)})")
 
+    # 追加更新日志
+    _append_changelog(fetch_count, len(TRACKED))
+
     # 历史备份
     backup_path = DATA_DIR / f"{now.strftime('%Y-%m-%d')}.json"
     backup_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -391,7 +421,7 @@ def main():
     # ── [5/5] Git 同步 ──
     print("[5/5] Git 同步...")
     try:
-        subprocess.run(["git", "add", "data.json", str(backup_path)],
+        subprocess.run(["git", "add", "data.json", "changelog.json", str(backup_path)],
                        cwd=BASE, capture_output=True, timeout=15)
         subprocess.run(
             ["git", "commit", "-m",
