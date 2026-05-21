@@ -148,13 +148,20 @@ async function loadData(){
 
 function buildAll(){
   if(!D)return;
-  document.getElementById('loading').style.display='none';
-  renderHeader();
-  renderNavTabs();
-  renderOverview();
-  renderSectorStocks();
-  drawRadar();
-  renderChangelog();
+  // 第一步：必须隐藏 loading，确保用户看到页面
+  try{document.getElementById('loading').style.display='none';}catch(e){}
+  // 第二步：逐步渲染，每步独立 try-catch，一个坏了不影响其他
+  const steps=[
+    ['Header',renderHeader],
+    ['NavTabs',renderNavTabs],
+    ['Overview',renderOverview],
+    ['SectorStocks',renderSectorStocks],
+    ['Radar',drawRadar],
+    ['Changelog',renderChangelog],
+  ];
+  steps.forEach(([name,fn])=>{
+    try{fn();}catch(e){console.error('buildAll/'+name+' 渲染失败:',e);}
+  });
   // 缓存
   try{localStorage.setItem('sd_cache',JSON.stringify(D));}catch(e){}
 }
@@ -306,49 +313,58 @@ function renderSectorStocks(){
   if(!D.sectors||!D.stocks)return;
   D.sectors.forEach((sector,i)=>{
     const tabKey='sector-'+i;
-    // Find stocks belonging to this sector (match by sector name or keyword)
     const sectorName=sector.name;
-    const stocks=D.stocks.filter(st=>{
+    // Exact match first, then fuzzy
+    let stocks=D.stocks.filter(st=>{
       const sn=st.sector||'';
-      return sn.includes(sectorName)||sectorName.includes(sn)||sn===sectorName;
+      return sn===sectorName||sn.includes(sectorName)||sectorName.includes(sn);
     });
-    if(stocks.length===0)return;
 
-    const rows=stocks.map(s=>{
-      const m=META[s.code]||{};
-      return `<tr>
-        <td><span class="sn">${s.name}</span><span class="sc">${s.code}</span></td>
-        <td>${m.sub||s.subsector||''}</td>
-        <td>${s.price||'--'}</td>
-        <td class="${s.trend==='up'?'tu':(s.trend==='down'?'td':'tf')}">${s.change_pct||'--'}</td>
-        <td><span class="rt ${m.rc||'rt-md'}">${m.risk||'中'}风险</span></td>
-        <td style="font-size:.73rem;color:var(--s500);max-width:150px">${m.thesis||''}</td>
-      </tr>`;
-    }).join('');
+    // Build rows or empty state
+    let rows='';
+    if(stocks.length>0){
+      rows=stocks.map(s=>{
+        const m=META[s.code]||{};
+        return `<tr>
+          <td><span class="sn">${s.name}</span><span class="sc">${s.code}</span></td>
+          <td>${m.sub||s.subsector||''}</td>
+          <td>${s.price||'--'}</td>
+          <td class="${s.trend==='up'?'tu':(s.trend==='down'?'td':'tf')}">${s.change_pct||'--'}</td>
+          <td><span class="rt ${m.rc||'rt-md'}">${m.risk||'中'}风险</span></td>
+          <td style="font-size:.73rem;color:var(--s500);max-width:150px">${m.thesis||''}</td>
+        </tr>`;
+      }).join('');
+    } else {
+      rows='<tr><td colspan="6" style="text-align:center;color:var(--s400);padding:24px">📭 该板块暂未纳入持仓跟踪，板块涨跌：<b>'+(sector.change_pct||'--')+'</b></td></tr>';
+    }
 
     document.getElementById('loading').insertAdjacentHTML('afterend',`
       <section class="section" id="sec-${tabKey}">
         <div class="card">
           <div class="card-title">${sector.trend==='up'?'📈':'📉'} ${sector.name} · 核心标的 (${stocks.length}只)</div>
-          <table class="stock-table"><thead><tr><th>股票</th><th>细分</th><th>最新价</th><th>涨跌幅</th><th>风险</th><th>核心逻辑</th></tr></thead><tbody>${rows||'<tr><td colspan="6" style="text-align:center;color:var(--s400)">暂无数据</td></tr>'}</tbody></table>
+          <table class="stock-table"><thead><tr><th>股票</th><th>细分</th><th>最新价</th><th>涨跌幅</th><th>风险</th><th>核心逻辑</th></tr></thead><tbody>${rows}</tbody></table>
         </div>
       </section>`);
   });
 }
 
 function drawRadar(){
-  const canvas=document.getElementById('radarChart');
-  if(!canvas)return;
-  if(radarChart)radarChart.destroy();
-  radarChart=new Chart(canvas,{type:'radar',data:{
-    labels:['确定性','弹性','估值安全','政策催化','业绩兑现'],
-    datasets:[
-      {label:'半导体',data:[95,95,40,90,85],borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.1)',borderWidth:2},
-      {label:'商业航天',data:[65,98,50,95,40],borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.1)',borderWidth:2},
-      {label:'电力',data:[95,60,88,75,90],borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',borderWidth:2},
-      {label:'机器人',data:[75,85,60,80,55],borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,.1)',borderWidth:2},
-    ]
-  },options:{responsive:true,scales:{r:{min:0,max:100,ticks:{stepSize:20}}}}});
+  try{
+    const canvas=document.getElementById('radarChart');
+    if(!canvas||typeof Chart==='undefined')return;
+    if(radarChart)radarChart.destroy();
+    radarChart=new Chart(canvas,{type:'radar',data:{
+      labels:['确定性','弹性','估值安全','政策催化','业绩兑现'],
+      datasets:[
+        {label:'半导体',data:[95,95,40,90,85],borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.1)',borderWidth:2},
+        {label:'商业航天',data:[65,98,50,95,40],borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.1)',borderWidth:2},
+        {label:'电力',data:[95,60,88,75,90],borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',borderWidth:2},
+        {label:'机器人',data:[75,85,60,80,55],borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,.1)',borderWidth:2},
+      ]
+    },options:{responsive:true,scales:{r:{min:0,max:100,ticks:{stepSize:20}}}}});
+  }catch(e){
+    console.warn('雷达图渲染失败（Chart.js未加载或网络问题）:',e.message);
+  }
 }
 
 // ═══════════════════ 更新日志 ═══════════════════

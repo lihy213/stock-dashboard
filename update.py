@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Stock Dashboard · 行情数据更新引擎 v3
-数据源: 国泰海通灵犀金融Skill (主) + 东方财富API (板块备份)
+数据源: 国泰海通灵犀金融Skill (个股+指数) + 固定板块(从持仓等权计算)
 更新时间: 2026-05-21
 """
 
@@ -19,8 +19,9 @@ CHANGELOG_FILE = BASE / "changelog.json"
 # ============= 灵犀金融Skill 配置 =============
 LINGXI_DIR = Path("C:/Users/Lihaoyang/.workbuddy/skills/国泰海通金融数据查询")
 LINGXI_ENTRY = LINGXI_DIR / "skill-entry.js"
-# API Key 授权文件（由 authChecker 自动管理）
 AUTH_FILE = Path("C:/Users/Lihaoyang/.workbuddy/gtht-skill-shared/gtht-entry.json")
+# 使用系统 Node 绕过 WorkBuddy 的 NODE_OPTIONS 限制
+NODE_EXE = "C:/Program Files/nodejs/node.exe"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -35,17 +36,17 @@ TRACKED = [
     ("603698", "航天工程", "商业航天", "中游·地面设备"),
     ("601698", "中国卫通", "商业航天", "下游·运营"),
     ("688387", "信科移动", "商业航天", "中游·通信"),
-    ("688281", "华秦科技", "商业航天", "上游·火箭制造"),
+    ("688281", "华秦科技", "军工电子", "隐身材料"),
     ("301005", "超捷股份", "商业航天", "上游·火箭制造"),
-    ("300474", "景嘉微", "商业航天", "中游·芯片"),
+    ("300474", "景嘉微", "AI芯片", "GPU/卫星图像"),
     ("002371", "北方华创", "半导体", "设备"),
     ("688012", "中微公司", "半导体", "设备"),
     ("688072", "拓荆科技", "半导体", "设备"),
     ("688120", "华海清科", "半导体", "设备"),
     ("688126", "沪硅产业", "半导体", "材料"),
     ("002409", "雅克科技", "半导体", "材料"),
-    ("688256", "寒武纪", "半导体", "AI芯片"),
-    ("688041", "海光信息", "半导体", "AI芯片"),
+    ("688256", "寒武纪", "AI芯片", "训练芯片"),
+    ("688041", "海光信息", "AI芯片", "CPU/GPU"),
     ("688981", "中芯国际", "半导体", "制造"),
     ("600900", "长江电力", "电力", "水电"),
     ("003816", "中国广核", "电力", "核电"),
@@ -53,20 +54,23 @@ TRACKED = [
     ("600406", "国电南瑞", "电力", "电网"),
     ("600089", "特变电工", "电力", "电网"),
     ("002028", "思源电气", "电力", "电网"),
-    ("300274", "阳光电源", "电力", "储能"),
-    ("300750", "宁德时代", "电力", "储能"),
-    ("688390", "固德威", "电力", "储能"),
+    ("300274", "阳光电源", "新能源车", "逆变器/储能"),
+    ("300750", "宁德时代", "新能源车", "动力电池"),
+    ("688390", "固德威", "新能源车", "逆变器/变流器"),
 ]
 
-# ============= 热门板块（东方财富API） =============
-DYNAMIC_SECTORS = [
-    ("BK0477", "半导体"),      ("BK0954", "商业航天"),
-    ("BK0462", "电力行业"),    ("BK0800", "AI芯片"),
-    ("BK0451", "光伏设备"),    ("BK0478", "消费电子"),
-    ("BK0491", "新能源车"),    ("BK0438", "军工电子"),
-    ("BK0809", "数据要素"),    ("BK0878", "机器人"),
-    ("BK0446", "创新药"),      ("BK0582", "低空经济"),
-    ("BK0863", "量子科技"),    ("BK0805", "氢能"),
+# ============= 固定板块列表（与前端 stocks 的 sector 字段对齐） =============
+FIXED_SECTORS = [
+    {"name": "半导体",   "note": "科创50共振回调"},
+    {"name": "商业航天", "note": "事件催化密集"},
+    {"name": "电力",     "note": "防御属性凸显"},
+    {"name": "机器人",   "note": "产业化加速"},
+    {"name": "AI芯片",   "note": "算力需求持续"},
+    {"name": "军工电子", "note": "地缘催化"},
+    {"name": "低空经济", "note": "政策推进"},
+    {"name": "新能源车", "note": "宁德时代拖累"},
+    {"name": "创新药",   "note": "港股联动"},
+    {"name": "大数据",   "note": "数据要素政策"},
 ]
 
 
@@ -99,11 +103,16 @@ def _call_lingxi(query: str, timeout: int = 20) -> dict:
         return []
 
     try:
+        # 清除可能冲突的 NODE_OPTIONS 环境变量
+        env = os.environ.copy()
+        env.pop("NODE_OPTIONS", None)
+
         result = subprocess.run(
-            ["node", str(LINGXI_ENTRY), "mcpClient", "call",
+            [NODE_EXE, str(LINGXI_ENTRY), "mcpClient", "call",
              "financial", "financial-search", f"query={query}"],
             cwd=str(LINGXI_DIR),
             capture_output=True, text=True, timeout=timeout,
+            env=env,
         )
         if result.returncode != 0:
             print(f"  ⚠ 灵犀查询失败: {result.stderr.strip()[-120:]}")
@@ -262,30 +271,30 @@ def fetch_stocks_lingxi(tracked: list, batch_size: int = 7) -> list:
     return results
 
 
-def fetch_sectors_eastmoney():
-    """通过东方财富API拉取板块（灵犀不支持板块查询）"""
-    sectors_data = []
-    secids = ",".join([f"90.{s[0]}" for s in DYNAMIC_SECTORS])
-    try:
-        r = requests.get(
-            "http://push2.eastmoney.com/api/qt/ulist.np/get",
-            params={"fltt": 2, "invt": 2, "fields": "f2,f3,f4,f12,f14", "secids": secids},
-            headers=HEADERS, timeout=10,
-        )
-        diffs = r.json().get("data", {}).get("diff", [])
-        for d in diffs:
-            pct = float(d.get("f3", 0))
-            sectors_data.append({
-                "code": d.get("f12", ""),
-                "name": d.get("f14", ""),
-                "change_pct": _fmt_pct_str(pct),
-                "change_pct_value": pct,
-                "trend": "up" if pct > 0 else ("down" if pct < 0 else "flat"),
-            })
-        print(f"  板块行情: {len(diffs)}/{len(DYNAMIC_SECTORS)} 个成功")
-    except Exception as e:
-        print(f"  板块行情失败: {e}")
-    return sectors_data
+def get_fixed_sectors(data: dict) -> list:
+    """
+    基于固定板块列表，从个股实际涨跌计算板块平均涨跌幅
+    确保板块数据始终与持仓 sector 字段对齐，不会出现"板块0匹配"
+    """
+    sectors_out = []
+    stocks = data.get("stocks", [])
+    for sdef in FIXED_SECTORS:
+        name = sdef["name"]
+        sector_stocks = [s for s in stocks if s.get("sector") == name]
+        if sector_stocks:
+            avg_pct = sum(s.get("change_pct_value", 0) for s in sector_stocks) / len(sector_stocks)
+            trend = "up" if avg_pct > 0 else "down"
+        else:
+            avg_pct = 0
+            trend = "down"
+        sectors_out.append({
+            "name": name,
+            "trend": trend,
+            "change_pct": f"{avg_pct:+.2f}%",
+            "change_pct_value": round(avg_pct, 2),
+            "note": sdef.get("note", ""),
+        })
+    return sectors_out
 
 
 def _append_changelog(fetch_count: int, total: int, tag: str = "行情刷新"):
@@ -346,7 +355,7 @@ def main():
         "indices": {},
         "stocks": [],
         "sectors": [],
-        "data_source": "国泰海通灵犀金融Skill + 东方财富板块",
+        "data_source": "国泰海通灵犀金融Skill + 固定板块(持仓等权计算)",
         "note": "灵犀金融Skill实时行情 | 国泰海通数据源",
     }
 
@@ -377,14 +386,10 @@ def main():
     result["stocks"] = fetch_stocks_lingxi(TRACKED, batch_size=7)
     fetch_count = sum(1 for s in result["stocks"] if s["price"] != "--")
 
-    # ── [3/4] 热门板块 ──
-    print("[3/4] 拉取热门板块 (东方财富API)...")
-    sectors = fetch_sectors_eastmoney()
-    if sectors:
-        sectors.sort(key=lambda x: abs(x.get("change_pct_value", 0)), reverse=True)
-    # 仅保留前10个涨跌幅最大的板块
-    result["sectors"] = sectors[:12]
-    print(f"  最终展示: {len(result['sectors'])} 个板块")
+    # ── [3/4] 固定板块（从个股数据计算）──
+    print("[3/4] 计算板块涨跌 (从持仓个股等权平均)...")
+    result["sectors"] = get_fixed_sectors(result)
+    print(f"  板块计算: {len(result['sectors'])} 个板块")
 
     # ── [4/5] 保存 ──
     print("[4/5] 保存数据...")
