@@ -232,6 +232,14 @@ function renderHeader(){
 
 function renderNavTabs(){
   const nav=document.getElementById('nav-tabs');
+  // 给所有已存在的静态标签绑定点击事件（宏观/风险/配置/更新日志/总览）
+  nav.querySelectorAll('.nav-tab[data-tab]').forEach(btn=>{
+    if(!btn._bound){
+      btn._bound=true;
+      btn.addEventListener('click',()=>switchTab(btn.dataset.tab));
+    }
+  });
+  // 动态注入板块标签
   if(!D.sectors||!D.sectors.length)return;
   D.sectors.forEach((s,i)=>{
     const tabKey='sector-'+i;
@@ -242,13 +250,16 @@ function renderNavTabs(){
       btn.id='tab-'+tabKey;
       const icon=s.trend==='up'?'📈':'📉';
       btn.textContent=icon+' '+s.name+' '+(s.change_pct||'--');
-      btn.onclick=()=>switchTab(tabKey);
+      btn._bound=true;
+      btn.addEventListener('click',()=>switchTab(tabKey));
       nav.appendChild(btn);
     }
   });
 }
 
 function renderOverview(){
+  // 防止重复插入（buildAll 可能因 fallback 多次调用）
+  if(document.getElementById('sec-overview'))return;
   const idx=D.indices||{};
   const sectors=D.sectors||[];
   // Sort: biggest movers first
@@ -361,6 +372,8 @@ function renderSectorStocks(){
   if(!D.sectors||!D.stocks)return;
   D.sectors.forEach((sector,i)=>{
     const tabKey='sector-'+i;
+    // 防止重复插入
+    if(document.getElementById('sec-'+tabKey))return;
     const sectorName=sector.name;
     // Exact match first, then fuzzy
     let stocks=D.stocks.filter(st=>{
@@ -389,7 +402,10 @@ function renderSectorStocks(){
     document.getElementById('loading').insertAdjacentHTML('afterend',`
       <section class="section" id="sec-${tabKey}">
         <div class="card">
-          <div class="card-title">${sector.trend==='up'?'📈':'📉'} ${sector.name} · 核心标的 (${stocks.length}只)</div>
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+            <span>${sector.trend==='up'?'📈':'📉'} ${sector.name} · 核心标的 (${stocks.length}只)</span>
+            <a href="javascript:void(0)" onclick="switchTab('overview')" style="font-size:.78rem;color:var(--b500);text-decoration:none;font-weight:400">← 返回总览</a>
+          </div>
           <table class="stock-table"><thead><tr><th>股票</th><th>细分</th><th>最新价</th><th>涨跌幅</th><th>风险</th><th>核心逻辑</th></tr></thead><tbody>${rows}</tbody></table>
         </div>
       </section>`);
