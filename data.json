@@ -1,5 +1,5 @@
 {
-  "update_time": "2026-05-21 19:34:45",
+  "update_time": "2026-05-21 20:09:27",
   "update_date": "2026-05-21",
   "is_trading": false,
   "indices": {
@@ -125,9 +125,9 @@
       "name": "超捷股份",
       "sector": "商业航天",
       "subsector": "上游·火箭制造",
-      "price": "--",
-      "change_pct": "-1.50%",
-      "change_pct_value": -1.5,
+      "price": "160.18",
+      "change_pct": "-4.65%",
+      "change_pct_value": -4.65,
       "volume_万": "--",
       "turnover_亿": "--",
       "pe": "--",
@@ -138,9 +138,9 @@
       "name": "景嘉微",
       "sector": "商业航天",
       "subsector": "中游·芯片",
-      "price": "--",
-      "change_pct": "-3.50%",
-      "change_pct_value": -3.5,
+      "price": "62.30",
+      "change_pct": "-4.43%",
+      "change_pct_value": -4.43,
       "volume_万": "--",
       "turnover_亿": "--",
       "pe": "--",
@@ -281,7 +281,7 @@
       "name": "中国广核",
       "sector": "电力",
       "subsector": "核电",
-      "price": "440.00",
+      "price": "4.40",
       "change_pct": "-3.93%",
       "change_pct_value": -3.93,
       "volume_万": "2026189",
@@ -294,39 +294,39 @@
       "name": "三峡能源",
       "sector": "电力",
       "subsector": "新能源",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
+      "price": "4.09",
+      "change_pct": "-0.73%",
+      "change_pct_value": -0.73,
       "volume_万": "--",
       "turnover_亿": "--",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "600406",
       "name": "国电南瑞",
       "sector": "电力",
       "subsector": "电网",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
+      "price": "25.66",
+      "change_pct": "-3.28%",
+      "change_pct_value": -3.28,
       "volume_万": "--",
       "turnover_亿": "--",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "600089",
       "name": "特变电工",
       "sector": "电力",
       "subsector": "电网",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
+      "price": "25.91",
+      "change_pct": "-2.92%",
+      "change_pct_value": -2.92,
       "volume_万": "--",
       "turnover_亿": "--",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "002028",
@@ -359,13 +359,13 @@
       "name": "宁德时代",
       "sector": "电力",
       "subsector": "储能",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
+      "price": "411.63",
+      "change_pct": "-0.75%",
+      "change_pct_value": -0.75,
       "volume_万": "--",
       "turnover_亿": "--",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688390",
@@ -453,5 +453,7 @@
       "trend": "up"
     }
   ],
-  "note": "东方财富实时行情 | 部分数据有 * 标记为前收盘缓存"
+  "note": "灵犀金融Skill实时行情 | 国泰海通数据源 | 27/27完整",
+  "data_source": "国泰海通灵犀金融Skill + 东方财富板块缓存",
+  "stocks_complete": "27/27"
 }
