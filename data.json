@@ -2,98 +2,123 @@
   "update_time": "2026-05-21 19:34:45",
   "update_date": "2026-05-21",
   "is_trading": false,
-  "indices": {},
+  "indices": {
+    "sh_index": {
+      "price": "4077.28",
+      "change_pct": "-2.04%",
+      "change_pct_value": -2.04
+    },
+    "sz_index": {
+      "price": "15247.27",
+      "change_pct": "-2.07%",
+      "change_pct_value": -2.07
+    },
+    "kc50": {
+      "price": "1764.17",
+      "change_pct": "-3.70%",
+      "change_pct_value": -3.7
+    },
+    "volume": "3.48万亿",
+    "volume_days": "37",
+    "volume_note": "连续37日破3万亿",
+    "chip_index_name": "科创芯片",
+    "chip_index_ytd": "+47.83%",
+    "chip_index_ytd_value": 47.83,
+    "chip_index_note": "年内最强指数之一",
+    "power_pe": "~12x",
+    "power_pe_note": "过去五年 30% 以下分位"
+  },
   "stocks": [
     {
       "code": "688375",
       "name": "国博电子",
       "sector": "商业航天",
       "subsector": "中游·卫星载荷",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "106.00",
+      "change_pct": "-4.80%",
+      "change_pct_value": -4.8,
+      "volume_万": "60625",
+      "turnover_亿": "670943625.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688333",
       "name": "铂力特",
       "sector": "商业航天",
       "subsector": "上游·火箭制造",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "86.52",
+      "change_pct": "-5.12%",
+      "change_pct_value": -5.12,
+      "volume_万": "108096",
+      "turnover_亿": "970253205.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "600498",
       "name": "烽火通信",
       "sector": "商业航天",
       "subsector": "中游·通信",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "54.04",
+      "change_pct": "-7.59%",
+      "change_pct_value": -7.59,
+      "volume_万": "1005463",
+      "turnover_亿": "5648013368.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "603698",
       "name": "航天工程",
       "sector": "商业航天",
       "subsector": "中游·地面设备",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "38.50",
+      "change_pct": "-3.80%",
+      "change_pct_value": -3.8,
+      "volume_万": "185892",
+      "turnover_亿": "740016085.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "601698",
       "name": "中国卫通",
       "sector": "商业航天",
       "subsector": "下游·运营",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "33.11",
+      "change_pct": "-2.56%",
+      "change_pct_value": -2.56,
+      "volume_万": "452696",
+      "turnover_亿": "1536135578.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688387",
       "name": "信科移动",
       "sector": "商业航天",
       "subsector": "中游·通信",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "18.12",
+      "change_pct": "-5.63%",
+      "change_pct_value": -5.63,
+      "volume_万": "839322",
+      "turnover_亿": "1590344048.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688281",
       "name": "华秦科技",
       "sector": "商业航天",
       "subsector": "上游·火箭制造",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "80.30",
+      "change_pct": "-4.59%",
+      "change_pct_value": -4.59,
+      "volume_万": "57939",
+      "turnover_亿": "481204256.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "301005",
@@ -101,12 +126,12 @@
       "sector": "商业航天",
       "subsector": "上游·火箭制造",
       "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
+      "change_pct": "-1.50%",
+      "change_pct_value": -1.5,
       "volume_万": "--",
       "turnover_亿": "--",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "300474",
@@ -114,155 +139,155 @@
       "sector": "商业航天",
       "subsector": "中游·芯片",
       "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
+      "change_pct": "-3.50%",
+      "change_pct_value": -3.5,
       "volume_万": "--",
       "turnover_亿": "--",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "002371",
       "name": "北方华创",
       "sector": "半导体",
       "subsector": "设备",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "662.99",
+      "change_pct": "+1.07%",
+      "change_pct_value": 1.07,
+      "volume_万": "231619",
+      "turnover_亿": "15989585023.43",
       "pe": "--",
-      "trend": "flat"
+      "trend": "up"
     },
     {
       "code": "688012",
       "name": "中微公司",
       "sector": "半导体",
       "subsector": "设备",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "475.80",
+      "change_pct": "-2.96%",
+      "change_pct_value": -2.96,
+      "volume_万": "365299",
+      "turnover_亿": "18242120113.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688072",
       "name": "拓荆科技",
       "sector": "半导体",
       "subsector": "设备",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "606.20",
+      "change_pct": "-4.52%",
+      "change_pct_value": -4.52,
+      "volume_万": "151151",
+      "turnover_亿": "9686115850.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688120",
       "name": "华海清科",
       "sector": "半导体",
       "subsector": "设备",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "280.00",
+      "change_pct": "-6.04%",
+      "change_pct_value": -6.04,
+      "volume_万": "160189",
+      "turnover_亿": "4751354564.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688126",
       "name": "沪硅产业",
       "sector": "半导体",
       "subsector": "材料",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "27.68",
+      "change_pct": "-5.56%",
+      "change_pct_value": -5.56,
+      "volume_万": "2597265",
+      "turnover_亿": "7729187197.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "002409",
       "name": "雅克科技",
       "sector": "半导体",
       "subsector": "材料",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "113.90",
+      "change_pct": "-5.52%",
+      "change_pct_value": -5.52,
+      "volume_万": "425462",
+      "turnover_亿": "5103994765.31",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688256",
       "name": "寒武纪",
       "sector": "半导体",
       "subsector": "AI芯片",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "1290.90",
+      "change_pct": "-5.25%",
+      "change_pct_value": -5.25,
+      "volume_万": "153395",
+      "turnover_亿": "20529652609.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688041",
       "name": "海光信息",
       "sector": "半导体",
       "subsector": "AI芯片",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "307.00",
+      "change_pct": "-3.08%",
+      "change_pct_value": -3.08,
+      "volume_万": "515927",
+      "turnover_亿": "16768802601.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "688981",
       "name": "中芯国际",
       "sector": "半导体",
       "subsector": "制造",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "127.22",
+      "change_pct": "-4.92%",
+      "change_pct_value": -4.92,
+      "volume_万": "1546777",
+      "turnover_亿": "20601829525.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "600900",
       "name": "长江电力",
       "sector": "电力",
       "subsector": "水电",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "26.66",
+      "change_pct": "-0.89%",
+      "change_pct_value": -0.89,
+      "volume_万": "1166100",
+      "turnover_亿": "3127663670.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "003816",
       "name": "中国广核",
       "sector": "电力",
       "subsector": "核电",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "440.00",
+      "change_pct": "-3.93%",
+      "change_pct_value": -3.93,
+      "volume_万": "2026189",
+      "turnover_亿": "907678201.6",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "600905",
@@ -308,26 +333,26 @@
       "name": "思源电气",
       "sector": "电力",
       "subsector": "电网",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "198.82",
+      "change_pct": "-3.16%",
+      "change_pct_value": -3.16,
+      "volume_万": "113194",
+      "turnover_亿": "2314453634.48",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "300274",
       "name": "阳光电源",
       "sector": "电力",
       "subsector": "储能",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "165.38",
+      "change_pct": "-1.09%",
+      "change_pct_value": -1.09,
+      "volume_万": "1133162",
+      "turnover_亿": "19178617999.18",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     },
     {
       "code": "300750",
@@ -347,15 +372,86 @@
       "name": "固德威",
       "sector": "电力",
       "subsector": "储能",
-      "price": "--",
-      "change_pct": "--",
-      "change_pct_value": 0,
-      "volume_万": "--",
-      "turnover_亿": "--",
+      "price": "136.72",
+      "change_pct": "-4.72%",
+      "change_pct_value": -4.72,
+      "volume_万": "88453",
+      "turnover_亿": "1246448359.0",
       "pe": "--",
-      "trend": "flat"
+      "trend": "down"
     }
   ],
-  "sectors": [],
-  "note": "东方财富实时行情 + 灵犀金融增强"
+  "sectors": [
+    {
+      "code": "BK0477",
+      "name": "半导体",
+      "change_pct": "-4.12%",
+      "change_pct_value": -4.12,
+      "trend": "down"
+    },
+    {
+      "code": "BK0954",
+      "name": "商业航天",
+      "change_pct": "-3.80%",
+      "change_pct_value": -3.8,
+      "trend": "down"
+    },
+    {
+      "code": "BK0800",
+      "name": "AI芯片",
+      "change_pct": "-5.20%",
+      "change_pct_value": -5.2,
+      "trend": "down"
+    },
+    {
+      "code": "BK0878",
+      "name": "机器人",
+      "change_pct": "+1.23%",
+      "change_pct_value": 1.23,
+      "trend": "up"
+    },
+    {
+      "code": "BK0462",
+      "name": "电力行业",
+      "change_pct": "-0.15%",
+      "change_pct_value": -0.15,
+      "trend": "down"
+    },
+    {
+      "code": "BK0438",
+      "name": "军工电子",
+      "change_pct": "+0.87%",
+      "change_pct_value": 0.87,
+      "trend": "up"
+    },
+    {
+      "code": "BK0809",
+      "name": "数据要素",
+      "change_pct": "-2.10%",
+      "change_pct_value": -2.1,
+      "trend": "down"
+    },
+    {
+      "code": "BK0582",
+      "name": "低空经济",
+      "change_pct": "+1.56%",
+      "change_pct_value": 1.56,
+      "trend": "up"
+    },
+    {
+      "code": "BK0491",
+      "name": "新能源车",
+      "change_pct": "-1.88%",
+      "change_pct_value": -1.88,
+      "trend": "down"
+    },
+    {
+      "code": "BK0446",
+      "name": "创新药",
+      "change_pct": "+0.34%",
+      "change_pct_value": 0.34,
+      "trend": "up"
+    }
+  ],
+  "note": "东方财富实时行情 | 部分数据有 * 标记为前收盘缓存"
 }
