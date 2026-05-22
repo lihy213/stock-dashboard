@@ -57,6 +57,22 @@ TRACKED = [
     ("300274", "阳光电源", "新能源车", "逆变器/储能"),
     ("300750", "宁德时代", "新能源车", "动力电池"),
     ("688390", "固德威", "新能源车", "逆变器/变流器"),
+    # ── 机器人板块 ──
+    ("688017", "绿的谐波", "机器人", "减速器"),
+    ("300124", "汇川技术", "机器人", "伺服系统"),
+    ("002527", "新时达", "机器人", "本体"),
+    # ── 低空经济板块 ──
+    ("688070", "纵横股份", "低空经济", "无人机"),
+    ("688297", "中无人机", "低空经济", "无人机"),
+    ("002389", "航天彩虹", "低空经济", "无人机"),
+    # ── 创新药板块 ──
+    ("688180", "君实生物", "创新药", "PD-1"),
+    ("300347", "泰格医药", "创新药", "CRO"),
+    ("603259", "药明康德", "创新药", "CRO龙头"),
+    # ── 大数据板块 ──
+    ("300212", "易华录", "大数据", "数据湖"),
+    ("603881", "数据港", "大数据", "数据中心"),
+    ("000977", "浪潮信息", "大数据", "AI服务器"),
 ]
 
 # ============= 固定板块列表（与前端 stocks 的 sector 字段对齐） =============
@@ -193,16 +209,21 @@ def _fmt_pct_val(v):
         return 0.0
 
 
+def _today_date_str():
+    """返回今日日期字符串，如 20260522"""
+    return datetime.datetime.now().strftime("%Y%m%d")
+
 def fetch_indices_lingxi():
     """通过灵犀Skill拉取三大指数"""
     rows = _call_lingxi("查询上证指数、深证成指、科创50指数的最新涨跌幅")
     indices = {}
+    today = _today_date_str()
     for row in rows:
         code = row.get("指数代码", "").split(".")[0]
         name = row.get("指数简称", "")
         price = row.get("最新价", "--")
-        # 指数表头含冒号 "最新涨跌幅:前复权" 或 "涨跌幅[日期]"
-        pct = (row.get("涨跌幅[20260521]", "") or
+        # 指数表头含冒号 "最新涨跌幅:前复权" 或 动态"涨跌幅[日期]"
+        pct = (row.get(f"涨跌幅[{today}]", "") or
                row.get("最新涨跌幅:前复权", "") or
                row.get("最新涨跌幅", "0"))
         pct_val = _fmt_pct_val(pct)
@@ -214,6 +235,31 @@ def fetch_indices_lingxi():
     return indices
 
 
+def fetch_turnover_lingxi():
+    """通过灵犀Skill拉取A股沪深两市成交额"""
+    rows = _call_lingxi("查询今日A股沪深两市总成交额")
+    if rows:
+        row = rows[0]
+        # 可能的字段名
+        vol = (row.get("成交额", "") or
+               row.get("成交金额", "") or
+               row.get("总成交额", "") or
+               row.get("最新价", ""))
+        if vol:
+            try:
+                vol_num = float(str(vol).replace(",", "").replace("亿", "").strip())
+                if vol_num < 100:
+                    vol_num = vol_num * 100000000  # 可能是以亿为单位，放大用于 display
+                if vol_num > 100000000:
+                    return f"{vol_num/100000000:.0f}亿"
+                elif vol_num > 10000:
+                    return f"{vol_num/10000:.0f}万"
+                return f"{vol_num:.0f}亿" if vol_num > 0 else "--"
+            except (ValueError, TypeError):
+                return str(vol) if vol else "--"
+    return "--"
+
+
 def fetch_stocks_lingxi(tracked: list, batch_size: int = 7) -> list:
     """
     通过灵犀Skill分批拉取个股行情
@@ -221,6 +267,7 @@ def fetch_stocks_lingxi(tracked: list, batch_size: int = 7) -> list:
     """
     results = []
     stock_map = {}  # code -> stock entry
+    today = _today_date_str()
 
     for i in range(0, len(tracked), batch_size):
         batch = tracked[i:i + batch_size]
@@ -235,8 +282,8 @@ def fetch_stocks_lingxi(tracked: list, batch_size: int = 7) -> list:
             code = code_raw.split(".")[0]  # 002371.SZ -> 002371
             name = row.get("股票简称", "")
             price = row.get("最新价", "--")
-            # 兼容不同字段名: "最新涨跌幅" 或 "涨跌幅[日期]"
-            pct_raw = (row.get("涨跌幅[20260521]", "") or
+            # 兼容不同字段名: "最新涨跌幅" 或 动态"涨跌幅[日期]"
+            pct_raw = (row.get(f"涨跌幅[{today}]", "") or
                        row.get("最新涨跌幅", "0"))
             pct_val = _fmt_pct_val(pct_raw)
 
@@ -359,16 +406,21 @@ def main():
         "note": "灵犀金融Skill实时行情 | 国泰海通数据源",
     }
 
-    # ── [1/4] 大盘指数 ──
-    print("[1/4] 拉取大盘指数 (灵犀Skill)...")
+    # ── [1/5] 大盘指数 ──
+    print("[1/5] 拉取大盘指数 (灵犀Skill)...")
     idx_data = fetch_indices_lingxi()
+
+    # ── [1.5] A股成交额 ──
+    turnover = fetch_turnover_lingxi()
+    print(f"  沪深成交额: {turnover}")
+
     result["indices"] = {
         "sh_index": idx_data.get("000001", {"price": "--", "change_pct": "--", "change_pct_value": 0}),
         "sz_index": idx_data.get("399001", {"price": "--", "change_pct": "--", "change_pct_value": 0}),
         "kc50": idx_data.get("000688", {"price": "--", "change_pct": "--", "change_pct_value": 0}),
-        "volume": "--",
+        "volume": turnover,
         "volume_days": "--",
-        "volume_note": "今日成交",
+        "volume_note": "今日成交额",
         "chip_index_name": "科创芯片",
         "chip_index_ytd": "+47.83%",
         "chip_index_ytd_value": 47.83,
@@ -378,16 +430,16 @@ def main():
     }
     sh = result["indices"]["sh_index"]
     kc = result["indices"]["kc50"]
-    print(f"  上证 {sh['price']} ({sh['change_pct']})  |  "
+    print(f"  成交额: {turnover}  |  上证 {sh['price']} ({sh['change_pct']})  |  "
           f"科创50 {kc['price']} ({kc['change_pct']})")
 
-    # ── [2/4] 个股行情 ──
-    print("[2/4] 拉取个股行情 (灵犀Skill)...")
+    # ── [2/5] 个股行情 ──
+    print("[2/5] 拉取个股行情 (灵犀Skill)...")
     result["stocks"] = fetch_stocks_lingxi(TRACKED, batch_size=7)
     fetch_count = sum(1 for s in result["stocks"] if s["price"] != "--")
 
-    # ── [3/4] 固定板块（从个股数据计算）──
-    print("[3/4] 计算板块涨跌 (从持仓个股等权平均)...")
+    # ── [3/5] 固定板块（从个股数据计算）──
+    print("[3/5] 计算板块涨跌 (从持仓个股等权平均)...")
     result["sectors"] = get_fixed_sectors(result)
     print(f"  板块计算: {len(result['sectors'])} 个板块")
 
