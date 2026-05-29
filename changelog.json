@@ -3,12 +3,6 @@
   "repo": "https://github.com/lihy213/stock-dashboard",
   "entries": [
     {
-      "date": "2026-05-21 19:34",
-      "message": "📊 05-21 19:34 行情更新 · 0/27只",
-      "version": "942f19e",
-      "tag": "行情刷新"
-    },
-    {
       "date": "2026-05-21 19:42",
       "message": "🔄 重构数据层: 东方财富API + 动态板块",
       "version": "1e7eb4e",
@@ -300,6 +294,12 @@
       "date": "2026-05-28 15:33",
       "message": "行情更新 05-28 15:33 · 灵犀Skill 39/39只",
       "version": "153330",
+      "tag": "行情刷新"
+    },
+    {
+      "date": "2026-05-29 09:30",
+      "message": "行情更新 05-29 09:30 · 灵犀Skill 0/39只",
+      "version": "093026",
       "tag": "行情刷新"
     }
   ]
