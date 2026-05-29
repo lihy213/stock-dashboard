@@ -3,12 +3,6 @@
   "repo": "https://github.com/lihy213/stock-dashboard",
   "entries": [
     {
-      "date": "2026-05-21 20:26",
-      "message": "行情更新 05-21 20:25 · 灵犀Skill 27/27只",
-      "version": "c2db147",
-      "tag": "行情刷新"
-    },
-    {
       "date": "2026-05-21 20:27",
       "message": "行情更新 05-21 20:27 · 灵犀Skill 27/27只",
       "version": "41576f9",
@@ -300,6 +294,12 @@
       "date": "2026-05-29 13:03",
       "message": "行情更新 05-29 13:03 · 灵犀Skill 0/39只",
       "version": "130302",
+      "tag": "行情刷新"
+    },
+    {
+      "date": "2026-05-29 14:00",
+      "message": "行情更新 05-29 14:00 · 灵犀Skill 0/39只",
+      "version": "140021",
       "tag": "行情刷新"
     }
   ]
