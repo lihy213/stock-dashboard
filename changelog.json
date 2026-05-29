@@ -3,12 +3,6 @@
   "repo": "https://github.com/lihy213/stock-dashboard",
   "entries": [
     {
-      "date": "2026-05-21 20:28",
-      "message": "refactor: 数据源迁移至灵犀金融Skill v3 | 27/27全量覆盖 | 修复JSON解析/字段匹配",
-      "version": "9c9448e",
-      "tag": "功能更新"
-    },
-    {
       "date": "2026-05-21 21:16",
       "message": "行情更新 05-21 21:16 · 灵犀Skill 27/27只",
       "version": "211638",
@@ -300,6 +294,12 @@
       "date": "2026-05-29 15:10",
       "message": "行情更新 05-29 15:10 · 灵犀Skill 0/39只",
       "version": "151017",
+      "tag": "行情刷新"
+    },
+    {
+      "date": "2026-05-29 15:35",
+      "message": "行情更新 05-29 15:35 · 灵犀Skill 39/39只",
+      "version": "153541",
       "tag": "行情刷新"
     }
   ]
